@@ -1,6 +1,7 @@
 import handler from "vinext/server/fetch-handler";
 import { runWithConnectorBinding } from "../lib/connector-context";
 import type { ConnectorBinding } from "../lib/connector-contract.mjs";
+import { runWithSearchEnvironment } from "../lib/search-runtime";
 
 export default {
   fetch(request: Request, env: Cloudflare.Env, ctx: ExecutionContext<{ CONNECTORS?: ConnectorBinding }>) {
@@ -23,6 +24,7 @@ export default {
         },
       };
     }
-    return runWithConnectorBinding(binding, () => handler.fetch(request, env, ctx));
+    return runWithSearchEnvironment(env as { KEENABLE_API_KEY?: string }, () =>
+      runWithConnectorBinding(binding, () => handler.fetch(request, env, ctx)));
   },
 };
