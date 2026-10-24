@@ -72,6 +72,8 @@ test('HTML structured data is extracted and publisher scripts never enter descri
 test('canonical URLs drop tracking but preserve job identity query parameters',()=>{
   assert.equal(canonicalJobURL('https://www.example.com/job?job_id=123&utm_source=mail&fbclid=abc#apply'),'https://example.com/job?job_id=123');
   assert.notEqual(canonicalJobURL('https://example.com/job?jk=abc'),canonicalJobURL('https://example.com/job?jk=def'));
+  assert.equal(canonicalJobURL('https://example.com/careers?position=123&utm_source=mail'),'https://example.com/careers?position=123');
+  assert.notEqual(canonicalJobURL('https://example.com/careers?position=123'),canonicalJobURL('https://example.com/careers?position=456'));
   assert.equal(canonicalJobURL('https://secret@example.com/job'),'');
 });
 test('duplicates combine source links and prefer employer application URL',()=>{

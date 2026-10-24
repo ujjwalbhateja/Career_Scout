@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowDownToLine, ArrowRight, Bookmark, Check, ChevronDown, Compass, ExternalLink, FileText, Globe2, Link2, LoaderCircle, MapPin, RefreshCw, Search, Settings2, ShieldCheck, SlidersHorizontal, X } from 'lucide-react';
 import { suggestRoleKeywords } from '@/lib/matching.mjs';
+import { canonicalJobURL, dedupeEvidence } from '@/lib/job-evidence.mjs';
 
 type Job = {
   id:string; title:string; company:string; location:string; arrangement:string; seniority:string; employment:string;
@@ -11,8 +12,9 @@ type Job = {
   sponsorship:{status:string;evidence:string}; description:string; url:string; source:string;
   postedAt:string|null; retrievedAt:string; imported:boolean; provenance:string; warnings:string[];
   indexedAt?:string|null; pagePublishedAt?:string|null;
+  requisitionId?:string; duplicateCount?:number; isJob?:boolean;
   sources?:{url:string;title?:string;kind?:string}[];
-  verification?:{status:string;checkedAt?:string|null;evidence?:string};
+  verification?:{status:string;checkedAt?:string|null;evidence?:string;sourceURL?:string};
   assessment?:{match?:boolean;reasons:string[];unknowns:string[];conflicts?:string[];score?:number;matchKind?:string};
 };
 type Report = {name:string;status:string;count:number;error?:string};
@@ -37,7 +39,7 @@ const dateLabel = (s?:string|null) => s && Number.isFinite(Date.parse(s))?new Da
 const checkedLabel = (s?:string|null) => s && Number.isFinite(Date.parse(s))?new Date(s).toLocaleString():'Not checked';
 function safeExternal(value:string) {try {const u=new URL(value); return u.protocol==='https:'&&!u.username&&!u.password?u.href:'';} catch {return '';}}
 function canonical(value:string) {
-  try {const u=new URL(value);u.hash='';for(const key of [...u.searchParams.keys()])if(/^(utm_|ref$|refid$|trackingid$|source$|src$|gh_src$)/i.test(key))u.searchParams.delete(key);return u.href.replace(/\/$/,'');} catch {return value;}
+  return canonicalJobURL(value)||value;
 }
 function suggestions(c:Criteria):string {
   return suggestRoleKeywords(c).map((value:{term:string})=>value.term).join(', ');
@@ -47,15 +49,9 @@ function mergeJobs(batches:Map<number,SearchResult>, rejected:Set<string>) {
   for(const batch of [...batches.entries()].sort((a,b)=>a[0]-b[0]).map(([,value])=>value))for(const job of batch.jobs||[]) {
     const identities=[job.url,...(job.sources||[]).map(source=>source.url)].filter(Boolean).map(canonical);
     if(identities.some(url=>rejected.has(url)))continue;
-    const index=result.findIndex(old=>old.id===job.id||[old.url,...(old.sources||[]).map(source=>source.url)].filter(Boolean).some(url=>identities.includes(canonical(url))));
-    if(index<0){result.push(job);continue;}
-    const old=result[index];
-    const checked=(j:Job)=>['available','closed'].includes(j.verification?.status||'')?(Date.parse(j.verification?.checkedAt||'')||1):0;
-    const winner=checked(job)>=checked(old)?job:old;
-    const allSources=[...(old.sources||[{url:old.url,title:old.source}]),...(job.sources||[{url:job.url,title:job.source}])];
-    result[index]={...winner,sources:[...new Map(allSources.filter(s=>s.url).map(s=>[canonical(s.url),s])).values()]};
+    result.push(job);
   }
-  return result.sort((a,b)=>(b.assessment?.score||0)-(a.assessment?.score||0));
+  return (dedupeEvidence(result) as Job[]).sort((a,b)=>(b.assessment?.score||0)-(a.assessment?.score||0));
 }
 function storedJobs(value:unknown):Job[] {
   return Array.isArray(value)?value.filter(j=>j&&typeof j.id==='string'&&typeof j.title==='string'&&typeof j.company==='string'&&typeof j.description==='string'&&j.salary&&j.sponsorship).slice(0,30):[];
