@@ -1,134 +1,70 @@
 'use client';
-
-import { useEffect, useRef, useState } from 'react';
+import {useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
-import { ArrowDownToLine, ArrowLeft, ArrowRight, Check, CheckCircle2, Circle, Clock3, Compass, GitBranch, LoaderCircle, RefreshCw, Search, ShieldCheck, Wifi, WifiOff, X } from 'lucide-react';
-import { progressCounts, stageState, taskBlockers, validateProgress, PROGRESS_POLL_SECONDS } from '@/lib/project-progress.mjs';
-import type { ProgressRecord, ProgressResponse, ProgressStatus, ProgressTask } from '@/lib/progress-types';
+import {ArrowDownToLine,ArrowLeft,ArrowRight,Check,CheckCircle2,Circle,Clock3,Compass,GitBranch,LoaderCircle,RefreshCw,Search,ShieldCheck,Wifi,WifiOff,X} from 'lucide-react';
+import {progressCounts,stageState,taskBlockers,validateProgress,PROGRESS_POLL_SECONDS,PROGRESS_STATUSES,STATUS_LABELS} from '@/lib/project-progress.mjs';
+import type {ProgressRecord,ProgressResponse,ProgressStatus,ProgressTask} from '@/lib/progress-types';
+import WorkflowBoard from './workflow-board';
 import './progress.css';
 
-const statusLabel:Record<ProgressStatus,string>={done:'Built',partial:'Partial',pending:'Pending'};
+const statuses=PROGRESS_STATUSES as ProgressStatus[];
 const dateLabel=(value:string)=>new Date(value+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
-function Status({status}:{status:ProgressStatus}){
-  const Icon=status==='done'?CheckCircle2:status==='partial'?Clock3:Circle;
-  return <span className={'progress-status status-'+status}><Icon size={13}/>{statusLabel[status]}</span>;
-}
+function Status({status}:{status:ProgressStatus}){const Icon=status==='complete'?CheckCircle2:['in_progress','in_review'].includes(status)?Clock3:Circle;return <span className={'progress-status status-'+status}><Icon size={13}/>{STATUS_LABELS[status]}</span>;}
 
 export default function ProgressTracker({initialRecord}:{initialRecord:ProgressRecord}){
-  const [record,setRecord]=useState(initialRecord);
-  const [stage,setStage]=useState('all'),[filter,setFilter]=useState('all'),[query,setQuery]=useState('');
-  const [selectedId,setSelectedId]=useState('keenable'),[syncedAt,setSyncedAt]=useState(''),[syncing,setSyncing]=useState(false);
-  const [connection,setConnection]=useState<boolean|null>(null),[syncError,setSyncError]=useState('');
-  const [announcement,setAnnouncement]=useState(''),[mobileDetails,setMobileDetails]=useState(false);
-  const [readyOnly,setReadyOnly]=useState(false);
-  const refreshRef=useRef<()=>void>(()=>{}),detailRef=useRef<HTMLDivElement>(null),revisionRef=useRef(initialRecord.revision);
-  const counts=progressCounts(record.tasks);
-  const needle=query.trim().toLowerCase();
-  const visible=record.tasks.filter(task=>(stage==='all'||task.stage===stage)&&(filter==='all'||task.status===filter)&&(!readyOnly||(task.status==='pending'&&taskBlockers(task,record.tasks).length===0))&&(!needle||[task.title,task.detail,task.evidence,task.source,task.acceptance,...(task.inputs||[])].filter(Boolean).join(' ').toLowerCase().includes(needle)));
+  const [record,setRecord]=useState(initialRecord),[owner,setOwner]=useState('all'),[filter,setFilter]=useState('all'),[query,setQuery]=useState('');
+  const [selectedId,setSelectedId]=useState('keenable'),[syncedAt,setSyncedAt]=useState(''),[syncing,setSyncing]=useState(false),[syncError,setSyncError]=useState('');
+  const [connection,setConnection]=useState<boolean|null>(null),[announcement,setAnnouncement]=useState(''),[mobileDetails,setMobileDetails]=useState(false),[legacyOnly,setLegacyOnly]=useState(false),[readyOnly,setReadyOnly]=useState(false);
+  const refreshRef=useRef<()=>void>(()=>{}),detailRef=useRef<HTMLElement>(null),revisionRef=useRef(initialRecord.revision);
+  const counts=progressCounts(record.tasks),needle=query.trim().toLowerCase();
+  const agentLabel=(id:string)=>record.agents.find(agent=>agent.id===id)?.title||id;
+  const visible=record.tasks.filter(task=>(owner==='all'||task.owner===owner)&&(filter==='all'||task.status===filter)&&(!legacyOnly||task.legacy)&&(!readyOnly||(task.status==='not_started'&&task.blockers.length===0&&taskBlockers(task,record.tasks).length===0))&&(!needle||[task.title,task.detail,task.evidence,task.source,task.acceptance,agentLabel(task.owner),...task.notes,...task.blockers,...(task.inputs||[])].filter(Boolean).join(' ').toLowerCase().includes(needle)));
   const selected=visible.find(task=>task.id===selectedId)||visible[0];
-  const stageInfo=record.stages.find(item=>item.id===stage);
-  const readyTasks=record.tasks.filter(task=>task.status==='pending'&&taskBlockers(task,record.tasks).length===0);
-
+  const selectedAgent=record.agents.find(agent=>agent.id===owner);
+  const blockers=(selected?taskBlockers(selected,record.tasks):[]) as ProgressTask[];
+  const ready=record.tasks.filter(task=>task.status==='not_started'&&!task.blockers.length&&!taskBlockers(task,record.tasks).length);
   useEffect(()=>{
     let disposed=false,active:AbortController|null=null;
-    async function refresh(){
-      if(active||disposed)return;
-      active=new AbortController();setSyncing(true);
-      try{
-        const response=await fetch('/api/progress',{cache:'no-store',signal:AbortSignal.any([active.signal,AbortSignal.timeout(12000)])});
-        if(!response.ok)throw new Error('The progress record could not be reached.');
-        const value=await response.json() as ProgressResponse;
-        validateProgress(value.record);
-        if(!value.servedAt||!Number.isFinite(Date.parse(value.servedAt))||typeof value.connection?.keenableConfigured!=='boolean')throw new Error('Invalid progress response.');
-        if(disposed)return;
-        if(revisionRef.current!==value.record.revision){setAnnouncement('The project record was updated.');revisionRef.current=value.record.revision;}
-        setRecord(value.record);
-        setSyncedAt(new Date().toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'}));
-        setConnection(value.connection.keenableConfigured);setSyncError('');
-      }catch(error){
-        if(!disposed){setSyncError(error instanceof Error&&error.name==='TimeoutError'?'The sync timed out. Showing the last loaded record.':'Sync unavailable. Showing the last loaded record; retry or check your sign-in.');setAnnouncement('Progress sync unavailable.');}
-      }finally{active=null;if(!disposed)setSyncing(false);}
-    }
-    refreshRef.current=()=>{void refresh();};
-    const onVisible=()=>{if(document.visibilityState==='visible')void refresh();};
-    const interval=window.setInterval(()=>{if(document.visibilityState==='visible')void refresh();},PROGRESS_POLL_SECONDS*1000);
-    document.addEventListener('visibilitychange',onVisible);window.addEventListener('focus',onVisible);
-    void refresh();
+    async function refresh(){if(active||disposed)return;active=new AbortController();setSyncing(true);try{
+      const response=await fetch('/api/progress',{cache:'no-store',signal:AbortSignal.any([active.signal,AbortSignal.timeout(12000)])});if(!response.ok)throw new Error('Progress unavailable.');
+      const value=await response.json() as ProgressResponse;validateProgress(value.record);
+      if(!Number.isFinite(Date.parse(value.servedAt))||typeof value.connection?.keenableConfigured!=='boolean')throw new Error('Invalid progress response.');
+      if(disposed)return;if(revisionRef.current!==value.record.revision){setAnnouncement('The project record was updated.');revisionRef.current=value.record.revision;}setRecord(value.record);setSyncedAt(new Date().toLocaleTimeString());setConnection(value.connection.keenableConfigured);setSyncError('');
+    }catch{if(!disposed){setSyncError('Sync unavailable. Showing the last loaded record; retry or check sign-in.');setAnnouncement('Progress sync unavailable.');}}finally{active=null;if(!disposed)setSyncing(false);}}
+    refreshRef.current=()=>{void refresh();};const onVisible=()=>{if(document.visibilityState==='visible')void refresh();};
+    const interval=window.setInterval(onVisible,PROGRESS_POLL_SECONDS*1000);document.addEventListener('visibilitychange',onVisible);window.addEventListener('focus',onVisible);void refresh();
     return ()=>{disposed=true;active?.abort();window.clearInterval(interval);document.removeEventListener('visibilitychange',onVisible);window.removeEventListener('focus',onVisible);refreshRef.current=()=>{};};
   },[]);
-
   useEffect(()=>{if(mobileDetails)detailRef.current?.focus();},[selectedId,mobileDetails]);
-
-  function chooseStage(id:string){setStage(id);setReadyOnly(false);setMobileDetails(false);}
-  function selectTask(task:ProgressTask){if(!visible.some(item=>item.id===task.id)){setStage(task.stage);setFilter('all');setQuery('');setReadyOnly(false);}setSelectedId(task.id);setMobileDetails(true);}
-  function exportRecord(){
-    const url=URL.createObjectURL(new Blob([JSON.stringify({exportedAt:new Date().toISOString(),record},null,2)],{type:'application/json'}));
-    const link=document.createElement('a');link.href=url;link.download='scout-project-progress.json';link.click();window.setTimeout(()=>URL.revokeObjectURL(url),1000);
-  }
-  const blockers=(selected?taskBlockers(selected,record.tasks):[]) as ProgressTask[];
-  const selectedStage=record.stages.find(item=>item.id===selected?.stage);
-  return <div className="progress-page">
-    <header className="topbar">
-      <Link className="brand" href="/" aria-label="Career Scout home"><span className="brand-mark"><Compass size={23}/></span><span>career<span className="brand-light">scout</span></span></Link>
-      <nav className="progress-nav" aria-label="Main navigation"><Link href="/">Discover jobs</Link><Link href="/progress" aria-current="page">Project progress</Link></nav>
-      <Link className="sources-button" href="/"><ArrowLeft size={16}/>Back to Scout</Link>
-    </header>
+  function chooseOwner(id:string){setOwner(id);setReadyOnly(false);setMobileDetails(false);}
+  function selectTask(task:ProgressTask){if(!visible.some(item=>item.id===task.id)){setOwner(task.owner);setFilter('all');setQuery('');setReadyOnly(false);setLegacyOnly(false);}setSelectedId(task.id);setMobileDetails(true);}
+  function exportRecord(){const url=URL.createObjectURL(new Blob([JSON.stringify({exportedAt:new Date().toISOString(),record},null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download='career-scout-agent-board.json';link.click();window.setTimeout(()=>URL.revokeObjectURL(url),1000);}
+  return <div className="progress-page agent-board-page">
+    <header className="topbar"><Link className="brand" href="/" aria-label="Career Scout home"><span className="brand-mark"><Compass size={23}/></span><span>career<span className="brand-light">scout</span></span></Link><nav className="progress-nav" aria-label="Main navigation"><Link href="/">Discover jobs</Link><Link href="/progress" aria-current="page">Agent board</Link><Link href="/workflow">Architecture</Link></nav><Link className="sources-button" href="/"><ArrowLeft size={16}/>Back to Scout</Link></header>
     <main className="progress-main">
-      <section className="progress-hero">
-        <div><span className="eyebrow"><span/> FROM SCOUT TO YOUR DAILY AGENT</span><h1>See what’s built.<br/><em>Know what comes next.</em></h1><p>{record.summary}</p></div>
-        <div className="progress-sync">
-          <div className={'sync-indicator '+(syncError?'sync-offline':'')}>{syncing?<LoaderCircle size={16} className="spin"/>:syncError?<WifiOff size={16}/>:syncedAt?<Wifi size={16}/>:<Clock3 size={16}/>}<strong>{syncing?'Syncing project record':syncError?'Sync unavailable':syncedAt?'Connected to project record':'Checking connection'}</strong></div>
-          <p>{syncedAt?`Last sync ${syncedAt}`:'Loading the latest published record…'}</p>
-          <button className="secondary" onClick={()=>refreshRef.current()} disabled={syncing}><RefreshCw size={14}/>Sync now</button>
-          <small>Auto-checks every {PROGRESS_POLL_SECONDS} seconds while this page is visible.</small>
-        </div>
-      </section>
-      <p className="sr-only" role="status" aria-live="polite">{announcement}</p>
-      {syncError&&<div className="notice" role="alert">{syncError}</div>}
-      <section className="progress-metrics" aria-label="Deliverable counts">
-        <button className={filter==='done'?'metric is-selected':'metric'} aria-pressed={filter==='done'} onClick={()=>{setFilter(filter==='done'?'all':'done');setReadyOnly(false);}}><span>Built</span><strong>{counts.done}<small> / {counts.total}</small></strong><span>Implemented deliverables</span></button>
-        <button className={filter==='partial'?'metric is-selected':'metric'} aria-pressed={filter==='partial'} onClick={()=>{setFilter(filter==='partial'?'all':'partial');setReadyOnly(false);}}><span>Partial</span><strong>{counts.partial}</strong><span>Acceptance work remains</span></button>
-        <button className={filter==='pending'?'metric is-selected':'metric'} aria-pressed={filter==='pending'} onClick={()=>{setFilter(filter==='pending'?'all':'pending');setReadyOnly(false);}}><span>Pending</span><strong>{counts.pending}</strong><span>Planned deliverables</span></button>
-        <button className={readyOnly?'metric is-selected':'metric'} aria-pressed={readyOnly} onClick={()=>{setReadyOnly(!readyOnly);setFilter('all');setStage('all');}}><span>Ready to plan</span><strong>{readyTasks.length}</strong><span>Recorded prerequisites complete</span></button>
-      </section>
-      <p className="progress-caption">Counts describe {counts.total} defined deliverables, not an estimate of effort or time. Feature statuses are reviewed with each release; syncing does not infer completion from code or run the test suite.</p>
-
-      <section className="capability-map" aria-labelledby="capability-title">
-        <div className="progress-section-head"><div><span className="eyebrow">CAPABILITY MAP</span><h2 id="capability-title">Your agent, stage by stage</h2></div><button className="text-button" onClick={()=>chooseStage('all')}>Show all stages <ArrowRight size={14}/></button></div>
-        <ol className="stage-map">
-          {record.stages.map((item,index)=>{const tasks=record.tasks.filter(task=>task.stage===item.id),total=progressCounts(tasks),state=stageState(tasks) as ProgressStatus;return <li key={item.id}><button aria-pressed={stage===item.id} className={'stage-node stage-'+state} onClick={()=>chooseStage(stage===item.id?'all':item.id)}><div className="stage-node-top"><span className="stage-number">{String(index+1).padStart(2,'0')}</span><Status status={state}/></div><h3>{item.title}</h3><p>{item.description}</p><div className="stage-track" role="img" aria-label={`${total.done} built, ${total.partial} partial, ${total.pending} pending`}><span className="track-done" style={{width:`${total.done/total.total*100}%`}}/><span className="track-partial" style={{width:`${total.partial/total.total*100}%`}}/><span className="track-pending" style={{width:`${total.pending/total.total*100}%`}}/></div><span className="stage-count">{total.done} of {total.total} built <ArrowRight size={14}/></span></button></li>;})}
-        </ol>
-        <div className="map-legend"><span><i className="legend-done"/>Built</span><span><i className="legend-partial"/>Partial</span><span><i className="legend-pending"/>Pending</span><span>Select a stage, then a deliverable to inspect its evidence and dependencies.</span></div>
-      </section>
-
-      <section className="progress-work" aria-labelledby="deliverables-title">
-        <div className="progress-section-head"><div><span className="eyebrow">IMPLEMENTATION RECORD</span><h2 id="deliverables-title">{stageInfo?.title||'All deliverables'} <span className="result-count">{visible.length}</span></h2></div><button className="secondary" onClick={exportRecord}><ArrowDownToLine size={15}/>Export record</button></div>
-        {stageInfo&&<p className="stage-next"><ArrowRight size={16}/>{stageInfo.next}</p>}
-        <div className="progress-filters"><label className="progress-search"><Search size={17}/><span className="sr-only">Find a feature or task</span><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Find a feature, rule or next step…"/></label><label><span className="sr-only">Filter by status</span><select value={filter} onChange={event=>{setFilter(event.target.value);setReadyOnly(false);}}><option value="all">All statuses</option><option value="done">Built</option><option value="partial">Partial</option><option value="pending">Pending</option></select></label>{(stage!=='all'||filter!=='all'||query||readyOnly)&&<button className="text-button" onClick={()=>{setStage('all');setFilter('all');setQuery('');setReadyOnly(false);}}>Clear filters <X size={14}/></button>}</div>
-        {readyOnly&&<div className="notice">Showing pending work whose recorded dependencies are complete. Some items still need your preferences or documents.</div>}
-        <div className="progress-detail-grid">
-          <div className="progress-task-list">
-            {visible.length===0&&<div className="progress-empty">No deliverables match these filters. Clear filters to see the whole plan.</div>}
-            {record.stages.map(group=>{const tasks=visible.filter(task=>task.stage===group.id);return tasks.length>0&&<section className="task-group" key={group.id} aria-label={group.title}><h3>{group.title}</h3>{tasks.map(task=><button className={'task-row '+(selected?.id===task.id?'task-selected':'')} aria-pressed={selected?.id===task.id} key={task.id} onClick={()=>selectTask(task)}><div><span className="task-title">{task.title}</span><span className="task-summary">{task.detail}</span></div><Status status={task.status}/><ArrowRight size={16}/></button>)}</section>;})}
-          </div>
-          {selected&&<aside className={'task-inspector '+(mobileDetails?'inspector-open':'')} aria-label="Selected deliverable" ref={detailRef} tabIndex={-1}>
-            <div className="inspector-top"><span className="eyebrow">{selectedStage?.title}</span><button className="icon-button inspector-close" aria-label="Close task detail" onClick={()=>setMobileDetails(false)}><X size={18}/></button></div>
-            <Status status={selected.status}/><h2>{selected.title}</h2><p>{selected.detail}</p>
-            <div className="inspector-section"><h3>{selected.status==='done'?'What was delivered':'What completion requires'}</h3><p>{selected.acceptance}</p></div>
-            {selected.evidence&&<div className="inspector-evidence"><ShieldCheck size={18}/><div><h3>Recorded evidence</h3><p>{selected.evidence}</p><small>Reviewed {dateLabel(record.reviewedOn)}. Historical checks retain their original dates.</small></div></div>}
-            {selected.status!=='done'&&<div className="inspector-section"><h3>{blockers.length?'Waiting on these deliverables':'Prerequisites'}</h3>{blockers.length?<div className="dependency-list">{blockers.map(task=><button key={task.id} onClick={()=>selectTask(task)}><GitBranch size={14}/>{task.title}<ArrowRight size={13}/></button>)}</div>:<p className="prerequisites-met"><Check size={15}/>No incomplete prerequisites recorded.</p>}</div>}
-            {(selected.inputs?.length||0)>0&&<div className="inspector-section"><h3>Needed from you</h3><ul>{selected.inputs!.map(input=><li key={input}>{input}</li>)}</ul></div>}
-            {(selected.dependsOn.length>0&&selected.status==='done')&&<div className="inspector-section"><h3>Depends on</h3><div className="dependency-list">{selected.dependsOn.map(id=>record.tasks.find(task=>task.id===id)).filter((task):task is ProgressTask=>!!task).map(task=><button key={task.id} onClick={()=>selectTask(task)}><GitBranch size={14}/>{task.title}<ArrowRight size={13}/></button>)}</div></div>}
-            {selected.source&&<details className="inspector-source"><summary>Implementation reference</summary><code>{selected.source}</code></details>}
-          </aside>}
-        </div>
-      </section>
-
-      <section className="progress-bottom" aria-label="Validation history and current connection">
-        <div className="progress-history"><span className="eyebrow">EVIDENCE HISTORY</span><h2>What has been checked</h2>{record.validation.map((event,index)=><article className="history-entry" key={index}><time dateTime={event.date}>{dateLabel(event.date)}</time><div><h3>{event.title}</h3><p>{event.detail}</p></div></article>)}</div>
-        <aside className="progress-boundaries"><span className="eyebrow">CURRENT OPERATION</span><h2>Scout is ready to use</h2><p><strong>Keenable key:</strong> {connection===null?'checking configuration':syncError?'last configuration check is stale':connection?'configured on this deployment':'not configured on this deployment'}.</p><p>Configuration checks do not spend search credits or confirm provider authentication. They do not run searches.</p><p>Job refresh is manual today. A daily schedule, resume Matcher and resume drafting are still pending.</p><Link className="primary" href="/">Open Discover <ArrowRight size={16}/></Link></aside>
-      </section>
-      <footer><span><Compass size={14}/> career scout · project progress</span><span>Record {record.revision} · Reviewed {dateLabel(record.reviewedOn)}</span></footer>
+      <section className="progress-hero"><div><span className="eyebrow"><span/> CAREER SCOUT · MULTI-AGENT WORKSPACE</span><h1>Develop each agent.<br/><em>See the whole system.</em></h1><p>{record.summary}</p><span className="framework-label">{record.framework.name} {record.framework.version} · executable foundation</span></div><div className="progress-sync"><div className={'sync-indicator '+(syncError?'sync-offline':'')}>{syncing?<LoaderCircle size={16} className="spin"/>:syncError?<WifiOff size={16}/>:syncedAt?<Wifi size={16}/>:<Clock3 size={16}/>}<strong>{syncing?'Syncing project record':syncError?'Sync unavailable':'Project record'}</strong></div><p>{syncedAt?`Last sync ${syncedAt}`:'Loading the latest published record…'}</p><button className="secondary" onClick={()=>refreshRef.current()} disabled={syncing}><RefreshCw size={14}/>Sync now</button><small>Checks every {PROGRESS_POLL_SECONDS} seconds while visible. Statuses change with reviewed releases.</small></div></section>
+      <p className="sr-only" role="status" aria-live="polite">{announcement}</p>{syncError&&<div className="notice" role="alert">{syncError}</div>}
+      <section className="progress-metrics agent-metrics" aria-label="Project status counts">{statuses.map(status=><button key={status} className={'metric '+(filter===status?'is-selected':'')} aria-pressed={filter===status} onClick={()=>{setFilter(filter===status?'all':status);setReadyOnly(false);}}><span>{STATUS_LABELS[status]}</span><strong>{counts[status]}</strong><span>Defined deliverables</span></button>)}</section>
+      <p className="progress-caption">{counts.total} tracked points · {record.tasks.filter(task=>task.legacy).length} preserved from the original tracker. Counts are not effort estimates. Ownership can change while the original progress, evidence and history remain available.</p>
+      <WorkflowBoard record={record} selected={owner} onSelect={chooseOwner}/>
+      <div className="runtime-note"><ShieldCheck size={20}/><div><strong>Working controls, explicit implementation gaps</strong><p>{record.framework.note} The routing and validation foundation is tested with isolated adapters; agent cards track what still needs to be connected. Permanent memory design is deferred.</p></div><Link href="/workflow">Inspect contracts <ArrowRight size={14}/></Link></div>
+      <section className="agent-overview" aria-labelledby="agents-title"><div className="progress-section-head"><div><span className="eyebrow">OWNERSHIP & PROGRESS</span><h2 id="agents-title">Develop an agent independently</h2></div><button className="text-button" onClick={()=>chooseOwner('all')}>All owners <ArrowRight size={14}/></button></div><div className="agent-owner-grid">{record.agents.map(agent=>{const tasks=record.tasks.filter(task=>task.owner===agent.id),total=progressCounts(tasks);return <button key={agent.id} className={'agent-owner-card '+(owner===agent.id?'owner-selected':'')} aria-pressed={owner===agent.id} onClick={()=>chooseOwner(owner===agent.id?'all':agent.id)}><div><h3>{agent.title}</h3><Status status={stageState(tasks) as ProgressStatus}/></div><p>{agent.description}</p><span className="owner-totals">{total.complete}/{total.total} complete · {total.in_progress} in progress · {total.blocked} blocked</span><div className="stage-track"><span className="track-done" style={{width:total.total?`${total.complete/total.total*100}%`:'0%'}}/><span className="track-partial" style={{width:total.total?`${total.in_progress/total.total*100}%`:'0%'}}/></div></button>;})}</div></section>
+      <section className="progress-work" aria-labelledby="deliverables-title"><div className="progress-section-head"><div><span className="eyebrow">DELIVERABLES · ACCEPTANCE · EVIDENCE</span><h2 id="deliverables-title">{selectedAgent?.title||'All owners'} <span className="result-count">{visible.length}</span></h2></div><button className="secondary" onClick={exportRecord}><ArrowDownToLine size={15}/>Export record</button></div>{selectedAgent&&<p className="stage-next"><ArrowRight size={16}/>{selectedAgent.next}</p>}
+      <div className="progress-filters"><label className="progress-search"><Search size={17}/><span className="sr-only">Search deliverables</span><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search points, notes, evidence or owners…"/></label><label><span className="sr-only">Owner</span><select value={owner} onChange={event=>chooseOwner(event.target.value)}><option value="all">All owners</option>{record.agents.map(agent=><option key={agent.id} value={agent.id}>{agent.title}</option>)}</select></label><label><span className="sr-only">Status</span><select value={filter} onChange={event=>{setFilter(event.target.value);setReadyOnly(false);}}><option value="all">All statuses</option>{statuses.map(status=><option key={status} value={status}>{STATUS_LABELS[status]}</option>)}</select></label><button className="text-button" onClick={()=>{setOwner('all');setFilter('all');setQuery('');setLegacyOnly(false);setReadyOnly(false);}}>Clear filters <X size={14}/></button></div>
+      <div className="board-filter-options"><label className="check-row"><input type="checkbox" checked={legacyOnly} onChange={event=>setLegacyOnly(event.target.checked)}/><span>Original tracker points only</span></label><label className="check-row"><input type="checkbox" checked={readyOnly} onChange={event=>{setReadyOnly(event.target.checked);setFilter('all');}}/><span>Prerequisites complete ({ready.length} across the project)</span></label></div>
+      <div className="progress-detail-grid"><div className="progress-task-list">{!visible.length&&<div className="progress-empty">No points match these filters. Clear filters to see the complete record.</div>}{record.agents.map(agent=>{const tasks=visible.filter(task=>task.owner===agent.id);return tasks.length>0&&<section className="task-group" key={agent.id} aria-label={agent.title}><h3>{agent.title}</h3>{tasks.map(task=><button key={task.id} className={'task-row '+(selected?.id===task.id?'task-selected':'')} aria-pressed={selected?.id===task.id} onClick={()=>selectTask(task)}><div><span className="task-origin">{task.legacy?'ORIGINAL TRACKER POINT':'AGENT DELIVERABLE'}</span><span className="task-title">{task.title}</span><span className="task-summary">{task.detail}</span></div><Status status={task.status}/><ArrowRight size={16}/></button>)}</section>;})}</div>
+      {selected&&<aside className={'task-inspector '+(mobileDetails?'inspector-open':'')} aria-label="Selected deliverable" ref={detailRef} tabIndex={-1}><div className="inspector-top"><span className="eyebrow">{agentLabel(selected.owner)}</span><button className="icon-button inspector-close" aria-label="Close task detail" onClick={()=>setMobileDetails(false)}><X size={18}/></button></div><Status status={selected.status}/><h2>{selected.title}</h2><p>{selected.detail}</p><div className="inspector-section"><h3>Acceptance criteria</h3><p>{selected.acceptance}</p></div>
+      {selected.evidence&&<div className="inspector-evidence"><ShieldCheck size={18}/><div><h3>Recorded evidence</h3><p>{selected.evidence}</p><small>Reviewed {dateLabel(record.reviewedOn)}. Recorded tests are not rerun by page sync.</small></div></div>}
+      <div className="inspector-section"><h3>Dependencies ({selected.dependsOn.length})</h3>{selected.dependsOn.length?<div className="dependency-list">{selected.dependsOn.map(id=>record.tasks.find(task=>task.id===id)).filter((task):task is ProgressTask=>!!task).map(task=><button key={task.id} onClick={()=>selectTask(task)}><GitBranch size={14}/><span>{task.title}<small>{agentLabel(task.owner)} · {STATUS_LABELS[task.status]}</small></span><ArrowRight size={13}/></button>)}</div>:<p>No prerequisites recorded.</p>}</div>
+      <div className="inspector-section"><h3>Blockers</h3>{selected.blockers.length+blockers.length?<ul>{selected.blockers.map((item,index)=><li key={'explicit'+index}>{item}</li>)}{blockers.map(task=><li key={task.id}>Waiting for {task.title}.</li>)}</ul>:<p className="prerequisites-met"><Check size={15}/>No blockers recorded.</p>}</div>
+      <div className="inspector-section"><h3>Notes</h3>{selected.notes.length?<ul>{selected.notes.map((note,index)=><li key={index}>{note}</li>)}</ul>:<p>No additional notes recorded.</p>}</div>
+      {!!selected.inputs?.length&&<div className="inspector-section"><h3>Needed from you</h3><ul>{selected.inputs.map(input=><li key={input}>{input}</li>)}</ul></div>}
+      <div className="inspector-section"><h3>Output links</h3>{selected.outputLinks.length?<div className="output-links">{selected.outputLinks.map((link,index)=><a key={index} href={link.url} target={link.url.startsWith('https:')?'_blank':undefined} rel="noreferrer">{link.label}<ArrowRight size={13}/></a>)}</div>:<p>No output has been published for this point yet.</p>}</div>
+      {selected.legacy&&<details className="inspector-source"><summary>Original progress and ownership history</summary><p>Original status: {selected.originalStatus}. Original owner: {agentLabel(selected.originalOwner||'scout')}.</p><ul>{selected.ownerHistory?.map((event,index)=><li key={index}>{dateLabel(event.date)} · {agentLabel(event.owner)} — {event.reason}</li>)}</ul><p>Original stage: {record.stages.find(stage=>stage.id===selected.legacyStage)?.title||selected.legacyStage}.</p></details>}
+      {selected.source&&<details className="inspector-source"><summary>Implementation reference</summary><code>{selected.source}</code></details>}</aside>}
+      </div></section>
+      <section className="progress-bottom"><div className="progress-history"><span className="eyebrow">DATED VALIDATION RECORD</span><h2>Implementation history</h2>{record.validation.map((event,index)=><article className="history-entry" key={index}><time dateTime={event.date}>{dateLabel(event.date)}</time><div><h3>{event.title}</h3><p>{event.detail}</p></div></article>)}</div><aside className="progress-boundaries"><span className="eyebrow">CURRENT OPERATION</span><h2>Scout remains available</h2><p><strong>Keenable configuration:</strong> {connection===null?'checking':syncError?'last check is stale':connection?'present on this deployment':'not configured'}. This is not an authentication or credit-balance check.</p><p>Job discovery works today. Production multi-agent runs, permanent profile memory, daily packages and model adapters remain tracked implementation work.</p><p>Reassignment preserves tracking history; dependencies never grant direct communication rights.</p><Link className="primary" href="/">Open Discover <ArrowRight size={16}/></Link></aside></section>
+      <footer><span><Compass size={14}/> career scout · agent board</span><span>Record {record.revision} · Reviewed {dateLabel(record.reviewedOn)}</span></footer>
     </main>
   </div>;
 }

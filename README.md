@@ -31,11 +31,11 @@ Web discovery is bounded and cannot enumerate every vacancy. Curated expansions 
 
 ## Project progress tracker
 
-Open **Progress** in Scout or visit `/progress`. The interactive capability map shows built, partial and pending deliverables, searchable tasks, dependency navigation, acceptance criteria, needed inputs and dated validation history. The current record contains 36 deliverables: 16 built, one partial and 19 pending. Counts represent defined deliverables, not estimated effort or a percentage of agent readiness.
+Open **Progress** in Scout or visit `/progress`. The multi-agent board shows 72 tracking points grouped by ten owners, including all 36 original points with preserved progress and ownership history. Statuses are Not Started, In Progress, Blocked, In Review and Complete. Search, owner/status/original-point filters, dependency navigation, acceptance criteria, blockers, notes, output links and dated validation history support development of each agent. Counts represent tracking points, not estimated effort or a percentage of agent readiness.
 
 The page checks `/api/progress` every 30 seconds while visible, resumes on focus, supports manual sync and preserves the last loaded record if a request fails. Polling makes no paid provider calls. Keenable configuration presence is shown separately from authentication or available credits. Feature statuses are reviewed in `data/scout-progress.json` and published with implementation changes; they are not inferred from code, Git or connection health. The reviewed record persists in the repository and is shared across devices through the private site. Export downloads that authoritative record; there are no browser-local status overrides.
 
-Keep task IDs stable, require evidence for built work, update revision/review date on release and preserve dated validation results. `AGENTS.md` documents this maintenance rule. `lib/project-progress.mjs` rejects duplicate IDs, missing prerequisites, dependency cycles and completed tasks without evidence or completed prerequisites. This tracker does not activate daily job searching or resume preparation.
+Keep task IDs stable, require evidence for Complete work, update revision/review date on release and preserve dated validation results. Reassignment must preserve the point and ownership history. `AGENTS.md` documents this maintenance rule. `lib/project-progress.mjs` rejects duplicate IDs, missing prerequisites, dependency cycles, forbidden communication routes and completed tasks without evidence or completed prerequisites. This tracker does not activate daily job searching or resume preparation.
 
 ## Implementation and checks
 
@@ -54,3 +54,17 @@ npm run build
 ```
 
 Tests cover matching boundaries, unknowns, eligibility, duplicate identity, live/closed/unreadable evidence, directory invalidation, stream events, cache isolation, refresh, request caps, provider failures and redirect safety. Live integration and production verification results are recorded in the workspace project context. Browser automation was unavailable during this release; HTTP and mocked UI-state checks do not replace visual browser QA.
+
+## Multi-agent board and LangGraph foundation
+
+`/progress` now groups deliverables by Master, Profile, Fact, Profile Builder, Scout, Matcher, Tailor, Grounding Critic, Permanent Memory and Application Storage. A zoomable/pannable communication board shows the permitted paths and numbered workflow stages. The route explorer explains intermediate coordinator hops. `/workflow` documents the contracts; `/api/workflow` exports the read-only workflow specification.
+
+The reviewed schema-v2 record retains every original tracker point, progress/evidence and dependency. Ownership can change, with original ownership/status and reassignment history preserved. Each point includes owner, one of five statuses (Not Started, In Progress, Blocked, In Review, Complete), dependencies, acceptance criteria, blockers, notes and output links. Original-only, owner and status filters support independent development. Legacy and granular agent points may describe related scope; they are separate tracking points rather than an effort percentage.
+
+`@langchain/langgraph` 1.5.2 is pinned. `lib/workflow/graph.mjs` exports `createCareerWorkflow(adapters, options)` and `createProfileGraph(adapters)`. Master connects all top-level steps; only Profile invokes Fact and Builder; Critic feedback loops through Master. `lib/workflow/policy.mjs` rejects unauthorized routes and binds reviews to job ID, approved profile version and draft fingerprint. Both fact and alignment reviews must pass without unresolved issues. A matching successful storage receipt is required before Ready to Apply.
+
+This is an executable, tested foundation with injected adapters, not connected production LLM agents. Missing adapters fail explicitly. The hosted board never starts a workflow or makes a model call. Permanent-memory storage/retrieval design is deliberately deferred, and no real daily application packages have been produced. Actual adapters, profile intake UI, evidence retrieval, persistent checkpoints, daily orchestration and storage are pending tracker work.
+
+The Profile contract requires 10–15 user-selected JDs alongside the existing resume and user-supplied capability answers. Selected JD requirements are questions to investigate, never evidence of experience. Facts and approved role profiles return through Profile to Master. Tailoring and two-part Critic reviews must preserve names, dates, qualifications and the meaning of actual experience.
+
+Communication design follows the official [LangGraph workflow documentation](https://docs.langchain.com/oss/javascript/langgraph/thinking-in-langgraph). A retained v1 fixture under `tests/fixtures` guards against losing original tracker content during migration. Tests exercise actual LangGraph invocation with isolated fixture adapters, forbidden routes, nested Profile boundaries, revision limits, stale reviews, job association and save failures. These tests do not establish real model matching or resume quality.
