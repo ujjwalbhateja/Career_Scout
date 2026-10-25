@@ -167,7 +167,7 @@ export default function Scout() {
   return <div className="app-shell">
     <header className="topbar">
       <Link className="brand" href="/" aria-label="Career Scout home"><span className="brand-mark"><Compass size={23}/></span><span>career<span className="brand-light">scout</span></span></Link>
-      <nav aria-label="Main navigation">{[['search','Discover',0],['import','Import a role',imported.length],['saved','Shortlist',saved.length]].map(([key,title,count])=><button key={key} className={tab===key?'active':''} onClick={()=>setTab(String(key))}>{title}{Number(count)>0&&<span className="nav-count">{count}</span>}</button>)}</nav>
+      <nav aria-label="Main navigation">{[['search','Discover',0],['import','Import a role',imported.length],['saved','Shortlist',saved.length]].map(([key,title,count])=><button key={key} className={tab===key?'active':''} onClick={()=>setTab(String(key))}>{title}{Number(count)>0&&<span className="nav-count">{count}</span>}</button>)}<Link className="progress-link" href="/progress">Progress</Link></nav>
       <button className="sources-button" onClick={()=>setSourceOpen(!sourceOpen)} aria-expanded={sourceOpen}><Settings2 size={17}/><span>Search coverage</span></button>
     </header>
     <main>

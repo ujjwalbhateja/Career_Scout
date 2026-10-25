@@ -29,6 +29,14 @@ Greenhouse, Lever, Ashby and public JobPosting pages can be imported directly. B
 
 Web discovery is bounded and cannot enumerate every vacancy. Curated expansions are editable rules, not model-based semantic search. Geography, salary, seniority and sponsorship extraction use conservative text/structured-data rules and can miss nuanced wording. Unknown salary currency/period is not converted or inferred. Check original employer evidence before applying. Cached checks retain their original timestamps.
 
+## Project progress tracker
+
+Open **Progress** in Scout or visit `/progress`. The interactive capability map shows built, partial and pending deliverables, searchable tasks, dependency navigation, acceptance criteria, needed inputs and dated validation history. The current record contains 36 deliverables: 16 built, one partial and 19 pending. Counts represent defined deliverables, not estimated effort or a percentage of agent readiness.
+
+The page checks `/api/progress` every 30 seconds while visible, resumes on focus, supports manual sync and preserves the last loaded record if a request fails. Polling makes no paid provider calls. Keenable configuration presence is shown separately from authentication or available credits. Feature statuses are reviewed in `data/scout-progress.json` and published with implementation changes; they are not inferred from code, Git or connection health. The reviewed record persists in the repository and is shared across devices through the private site. Export downloads that authoritative record; there are no browser-local status overrides.
+
+Keep task IDs stable, require evidence for built work, update revision/review date on release and preserve dated validation results. `AGENTS.md` documents this maintenance rule. `lib/project-progress.mjs` rejects duplicate IDs, missing prerequisites, dependency cycles and completed tasks without evidence or completed prerequisites. This tracker does not activate daily job searching or resume preparation.
+
 ## Implementation and checks
 
 - `lib/keenable.mjs`: provider orchestration, bounded calls, caching and streaming snapshots.
