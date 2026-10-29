@@ -69,7 +69,10 @@ export default defineConfig(async ({ command, mode }) => {
         inspectorPort: false,
         config: {
           ...localBindingConfig,
-          ...(command === "serve" ? { vars: { KEENABLE_API_KEY: loadEnv(mode, process.cwd(), "KEENABLE_").KEENABLE_API_KEY || "" } } : {}),
+          ...(command === "serve" ? { vars: Object.fromEntries(
+            Object.entries(loadEnv(mode, process.cwd(), "")).filter(([key]) =>
+              ['KEENABLE_API_KEY','SUPABASE_URL','SUPABASE_SECRET_KEY','SUPABASE_SERVICE_ROLE_KEY','PINECONE_API_KEY','PINECONE_INDEX_HOST','PINECONE_INDEX_NAME','OPENAI_API_KEY','PROFILE_MODEL_API_KEY','PROFILE_MODEL_NAME','PROFILE_MODEL_URL','PROFILE_EMBEDDING_API_KEY'].includes(key))
+          ) } : {}),
           ...(command === "serve"
             ? {
                 services: [

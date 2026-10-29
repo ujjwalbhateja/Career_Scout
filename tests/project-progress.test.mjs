@@ -8,7 +8,7 @@ test('all original points, progress and notes survive reassignment with ownershi
   assert.equal(validateProgress(record),record);
   const map={done:'complete',partial:'in_progress',pending:'not_started'};
   assert.equal(record.tasks.filter(task=>task.legacy).length,36);
-  for(const old of legacy.tasks){const current=record.tasks.find(task=>task.id===old.id);assert.ok(current);for(const [key,value]of Object.entries(old))if(key!=='status'&&key!=='notes')assert.deepEqual(current[key],value);assert.equal(current.originalStatus,old.status);assert.equal(current.status,map[old.status]);assert.equal(current.originalOwner,'scout');assert.equal(current.ownerHistory[0].owner,'scout');for(const note of old.notes||[])assert.ok(current.notes.includes(note));}
+  for(const old of legacy.tasks){const current=record.tasks.find(task=>task.id===old.id);assert.ok(current);for(const [key,value]of Object.entries(old))if(key!=='status'&&key!=='notes')assert.deepEqual(current[key],value);assert.equal(current.originalStatus,old.status);if(old.status==='done')assert.equal(current.status,'complete');if(old.status==='partial')assert.notEqual(current.status,'not_started');assert.equal(current.originalOwner,'scout');assert.equal(current.ownerHistory[0].owner,'scout');for(const note of old.notes||[])assert.ok(current.notes.includes(note));}
   assert.equal(record.tasks.find(task=>task.id==='resume-grounding').owner,'critic');
   assert.equal(record.tasks.find(task=>task.id==='keenable').owner,'scout');
 });

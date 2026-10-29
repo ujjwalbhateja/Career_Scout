@@ -1,6 +1,6 @@
 ﻿# Career Scout
 
-Private job discovery powered by Keenable, with editable related roles, source evidence, direct imports, and a browser-local shortlist.
+Private Keenable job discovery plus a source-linked Profile intake/review implementation using Supabase records and Pinecone vectors. Hosted schema/model activation remains a separate gate.
 
 ## Run locally
 
@@ -63,8 +63,8 @@ The reviewed schema-v2 record retains every original tracker point, progress/evi
 
 `@langchain/langgraph` 1.5.2 is pinned. `lib/workflow/graph.mjs` exports `createCareerWorkflow(adapters, options)` and `createProfileGraph(adapters)`. Master connects all top-level steps; only Profile invokes Fact and Builder; Critic feedback loops through Master. `lib/workflow/policy.mjs` rejects unauthorized routes and binds reviews to job ID, approved profile version and draft fingerprint. Both fact and alignment reviews must pass without unresolved issues. A matching successful storage receipt is required before Ready to Apply.
 
-This is an executable, tested foundation with injected adapters, not connected production LLM agents. Missing adapters fail explicitly. The hosted board never starts a workflow or makes a model call. Permanent-memory storage/retrieval design is deliberately deferred, and no real daily application packages have been produced. Actual adapters, profile intake UI, evidence retrieval, persistent checkpoints, daily orchestration and storage are pending tracker work.
+Profile now has a private intake/review UI, real Supabase/Pinecone provider adapters and reusable approval records. Missing schema or model credentials fail explicitly. The board never starts a workflow or makes a model call. General daily checkpoints, production Tailor/Critic generation and application delivery remain separate pending work. See docs/profile-workflow.md for setup, security boundaries and operational gates.
 
-The Profile contract requires 10–15 user-selected JDs alongside the existing resume and user-supplied capability answers. Selected JD requirements are questions to investigate, never evidence of experience. Facts and approved role profiles return through Profile to Master. Tailoring and two-part Critic reviews must preserve names, dates, qualifications and the meaning of actual experience.
+Initial Profile onboarding requires 10–15 selected JDs alongside the existing resume and capability answers. Later jobs can use an approved saved snapshot without new onboarding or repeated approvals. Selected JD requirements are questions to investigate, never evidence of experience. Facts and approved role profiles return through Profile to Master. Tailoring and two-part Critic reviews must preserve names, dates, qualifications and the meaning of actual experience.
 
 Communication design follows the official [LangGraph workflow documentation](https://docs.langchain.com/oss/javascript/langgraph/thinking-in-langgraph). A retained v1 fixture under `tests/fixtures` guards against losing original tracker content during migration. Tests exercise actual LangGraph invocation with isolated fixture adapters, forbidden routes, nested Profile boundaries, revision limits, stale reviews, job association and save failures. These tests do not establish real model matching or resume quality.

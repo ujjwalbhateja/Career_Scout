@@ -5,7 +5,7 @@ import {AGENT_IDS,COMMUNICATION_ROUTES,assertCommunication,routingPath,draftFing
 
 function fixture(){
   const calls=[],saves=[];
-  const facts={verified:true,version:'fixture-v1',approvalRef:'fixture-user-approval',evidenceRefs:['fixture-project']};
+  const facts={approvalStatus:'approved',version:'fixture-v1',approvalRef:'fixture-user-approval',evidenceRefs:['fixture-project']};
   const job={id:'fixture-job',title:'Portfolio Analyst',company:'Test Employer',applicationUrl:'https://example.com/jobs/fixture',description:'Fixture job description. Analyze investment portfolio performance with Python, supported evidence and clear reporting responsibilities.'};
   const request={packageDate:'2026-10-25',searchRequirements:{roles:'Portfolio Analyst'},profileInput:{existingResume:'Test fixture resume only',profileInformation:{fixture:true},capabilityAnswers:[{evidence:'fixture-project'}],selectedJobDescriptions:Array.from({length:10},(_,index)=>({id:'jd-'+index,text:job.description}))}};
   const handlers={
