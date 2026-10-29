@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
-  "revision": "2026-10-29.6",
+  "revision": "2026-10-29.7",
   "reviewedOn": "2026-10-29",
-  "summary": "Gemini analysis and embeddings are implemented and deployed with a server-only key. Supabase and Pinecone are retained. Local synthetic model/Pinecone checks and hosted HTTP/access checks passed. Full authenticated runtime, representative quality and real-user onboarding remain in progress.",
+  "summary": "Gemini Profile integration is deployed. Approval reliability repair validates the reviewed fact version and prior decision, confirms persisted status, ignores late older reads and refreshes background indexing. Full representative quality and real-user workflow review remain in progress.",
   "framework": {
     "name": "LangGraph",
     "version": "1.5.2",
@@ -1077,11 +1077,12 @@
         }
       ],
       "blockers": [
-        "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
+        "Verify the repaired signed-in approval flow with the user; existing rejected facts require explicit review/re-approval."
       ],
       "notes": [
         "Preserved original tracker point. Ownership may change; progress and ownership history remain available.",
-        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
+        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
+        "2026-10-29 approval repair: reload the latest record before a decision; bind the reviewed fact version/fingerprint/prior approval; preserve server revision conflicts; verify saved status before success; ignore lower-revision reads; lock duplicate inputs; poll indexing/foreground state. Direct per-fact approval, explicit batch outcomes and saved decision history added. No existing user decisions were changed. Exact cause of the reported rejection is not established."
       ],
       "outputLinks": [
         {
@@ -1617,7 +1618,8 @@
       ],
       "notes": [
         "Detailed permanent storage and retrieval design is explicitly deferred.",
-        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
+        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
+        "2026-10-29 approval repair: reload the latest record before a decision; bind the reviewed fact version/fingerprint/prior approval; preserve server revision conflicts; verify saved status before success; ignore lower-revision reads; lock duplicate inputs; poll indexing/foreground state. Direct per-fact approval, explicit batch outcomes and saved decision history added. No existing user decisions were changed. Exact cause of the reported rejection is not established."
       ],
       "outputLinks": [
         {
@@ -2518,7 +2520,8 @@
         "Complete desktop/mobile interaction review, including the new structural diagram and end-to-end authenticated Profile flows. Browser extension access is unavailable; native desktop access is partial."
       ],
       "notes": [
-        "Added with the user-approved Profile workflow; source implementation and operational activation are tracked separately."
+        "Added with the user-approved Profile workflow; source implementation and operational activation are tracked separately.",
+        "2026-10-29 approval repair: reload the latest record before a decision; bind the reviewed fact version/fingerprint/prior approval; preserve server revision conflicts; verify saved status before success; ignore lower-revision reads; lock duplicate inputs; poll indexing/foreground state. Direct per-fact approval, explicit batch outcomes and saved decision history added. No existing user decisions were changed. Exact cause of the reported rejection is not established."
       ],
       "outputLinks": [
         {
@@ -2825,6 +2828,11 @@
       "date": "2026-10-29",
       "title": "Gemini: hosted release verification",
       "detail": "Release 10 deployed successfully with environment revision 3. All 14 HTTP checks passed: Gemini contract, 84-task reviewed record, diagram link, Supabase migration/load reachability and owner/visitor/origin boundaries. No hosted model calls, personal profile reads or browser QA. Source fd6e868ab5cb970926addc7b5d061ccbaade5abc."
+    },
+    {
+      "date": "2026-10-29",
+      "title": "Profile approval synchronization: synthetic regressions",
+      "detail": "All 145 automated tests and TypeScript passed. Eight actual workspace-component scenarios validate late-read protection, exact saved receipt, prior-decision/version guards, duplicate input locking, explicit reject/re-approve, stale-save failure visibility and indexing refresh. Tests use synthetic in-memory state with no user profile writes or model calls. Full browser and real-user decision verification remain pending."
     }
   ]
 }

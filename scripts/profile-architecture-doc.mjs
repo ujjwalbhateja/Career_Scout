@@ -41,7 +41,7 @@ ${PROFILE_LAYERS.map(layer=>`### ${layer.title}\n\n${layer.description}\n\n`+lay
 
 ## Recorded validation
 
-${record.validation.filter(item=>/Gemini|Profile.*diagram/.test(item.title)).map(item=>`- ${item.date} — **${item.title}**: ${item.detail}`).join('\n')}
+${record.validation.filter(item=>/Gemini|Profile/.test(item.title)).map(item=>`- ${item.date} — **${item.title}**: ${item.detail}`).join('\n')}
 
 Interactive structure: /profile/architecture. Full reviewed tracker: /progress.
 Regenerate this file with \`node scripts/profile-architecture-doc.mjs\` whenever the reviewed record changes.

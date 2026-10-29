@@ -1,6 +1,6 @@
 # Profile Agent: structure and reviewed progress
 
-Reviewed 2026-10-29; record revision 2026-10-29.6. Generated from the same task mapping and reviewed record as /profile/architecture. States summarize tracked acceptance; they are not live health checks. There are 29 distinct items in the diagram, including Master dispatch; shared items are counted once.
+Reviewed 2026-10-29; record revision 2026-10-29.7. Generated from the same task mapping and reviewed record as /profile/architecture. States summarize tracked acceptance; they are not live health checks. There are 29 distinct items in the diagram, including Master dispatch; shared items are counted once.
 
 ```mermaid
 flowchart TD
@@ -33,7 +33,7 @@ Owns intake, individual approvals, corrections, snapshots and the only interface
 - **complete** — Nested Profile coordination foundation (`profile-subgraph`) Evidence: Actual nested LangGraph graph and audit-route tests.
 - **complete** — Bounded document extraction (`profile-document-parsers`) Evidence: DOCX/table/PDF/TXT and adversarial parser tests in tests/profile.test.mjs.
 - **in progress** — Read your master resume (`profile-ingest`): Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows.
-- **in progress** — Approve your factual career profile (`profile-approval`): Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows.
+- **in progress** — Approve your factual career profile (`profile-approval`): Verify the repaired signed-in approval flow with the user; existing rejected facts require explicit review/re-approval.
 - **in progress** — Consolidate approved profile outputs (`profile-consolidation`): Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows.
 - **in progress** — Profile export, withdrawal and deletion (`profile-data-lifecycle`): Hosted storage/deletion integration verification pending.
 - **in progress** — Profile browser and interaction review (`profile-browser-review`): Complete desktop/mobile interaction review, including the new structural diagram and end-to-end authenticated Profile flows. Browser extension access is unavailable; native desktop access is partial.
@@ -108,10 +108,13 @@ Searches vectors by meaning. Matches are reloaded from current approved Supabase
 
 ## Recorded validation
 
+- 2026-10-29 — **Profile implementation: local checks**: 109 automated tests, including 31 Profile/PostgreSQL checks, plus TypeScript and production build passed. Seven SSR overview assertions passed; visual/interaction browser QA is unavailable. Live Pinecone synthetic transport passed; Supabase runtime credentials accepted. Hosted migration, OpenAI credentials and real-model evaluation remain pending.
+- 2026-10-29 — **Profile provider transport: Workers regression**: Two actual workerd tests pass for profile RPC, health, private download, Pinecone, embedding and model transport using fixtures. Unsupported redirect mode reproduced the original error before networking; manual redirects resolve it while rejecting cross-host redirects. These tests do not establish real model quality.
 - 2026-10-29 — **Gemini: initial live synthetic check**: Three local Gemini requests succeeded: source-linked extraction produced four pending synthetic facts; document/query embeddings had 3072 dimensions; reporting-related passages ranked above unrelated equipment text. No stored profile read, personal upload, real approval or OpenAI call. This is a smoke check, not representative full workflow evaluation.
 - 2026-10-29 — **Gemini: synthetic JD, Builder and Pinecone flow**: Six Gemini requests passed extraction, one live JD extraction, role proposals and assessment; the JD result was copied onto ten distinct synthetic fixture IDs to exercise onboarding without ten extra calls. Unsupported SQL stayed unmapped, roles stayed proposed, and three synthetic Gemini vectors were searched in an isolated Pinecone namespace. Cleanup requested. No real profile read or real approvals.
 - 2026-10-29 — **Profile diagram: local component verification**: 140 automated tests and TypeScript passed. Eight React SSR/component checks passed for nine layers, task selection, configuration presence, polling, offline preservation, recovery, visibility and cancellation. Native Chrome was in active user use and browser-extension access unavailable; visual/mobile/full authenticated browser QA remains pending.
 - 2026-10-29 — **Gemini: hosted release verification**: Release 10 deployed successfully with environment revision 3. All 14 HTTP checks passed: Gemini contract, 84-task reviewed record, diagram link, Supabase migration/load reachability and owner/visitor/origin boundaries. No hosted model calls, personal profile reads or browser QA. Source fd6e868ab5cb970926addc7b5d061ccbaade5abc.
+- 2026-10-29 — **Profile approval synchronization: synthetic regressions**: All 145 automated tests and TypeScript passed. Eight actual workspace-component scenarios validate late-read protection, exact saved receipt, prior-decision/version guards, duplicate input locking, explicit reject/re-approve, stale-save failure visibility and indexing refresh. Tests use synthetic in-memory state with no user profile writes or model calls. Full browser and real-user decision verification remain pending.
 
 Interactive structure: /profile/architecture. Full reviewed tracker: /progress.
 Regenerate this file with `node scripts/profile-architecture-doc.mjs` whenever the reviewed record changes.

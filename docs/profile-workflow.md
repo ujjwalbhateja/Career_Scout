@@ -10,6 +10,25 @@ Structural diagram: `/profile/architecture`; maintained source diagram and layer
 checklist: [profile-architecture.md](profile-architecture.md). Its statuses come
 from the same reviewed `data/scout-progress.json` record as `/progress`.
 
+## Approval display and save synchronization
+
+The workspace checks the latest saved record before a fact decision. Each
+decision binds the reviewed fact ID/version, fingerprint and prior approval/ref.
+Changed facts or another decision require review; aggregate revision conflicts
+remain enforced. No automatic approval or blind retry is performed.
+
+The UI validates returned fact statuses before showing a positive saved receipt.
+Older in-flight reads cannot replace a newer profile revision. A synchronous
+action lock prevents rapid conflicting submissions. Background indexing is
+polled while pending and on foreground/focus; active writer leases pause editing
+until safe. Read refreshes preserve disclosure drafts. Fact selections bind
+individual versions and expire when those versions are no longer current.
+
+The Facts screen shows saved status counts, direct per-fact approval and
+version-specific decision history. Reject/withdraw controls are grouped under
+Other decisions. A rejected fact changes only after a new explicit user decision;
+this repair never rewrites existing user approvals or rejection history.
+
 ## Routing
 
 User → Master → Profile. Profile alone coordinates Fact, Builder and Permanent
