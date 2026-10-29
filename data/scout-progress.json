@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
-  "revision": "2026-10-29.7",
+  "revision": "2026-10-29.8",
   "reviewedOn": "2026-10-29",
-  "summary": "Gemini Profile integration is deployed. Approval reliability repair validates the reviewed fact version and prior decision, confirms persisted status, ignores late older reads and refreshes background indexing. Full representative quality and real-user workflow review remain in progress.",
+  "summary": "Resume-only role proposals and the approved Profile → Master → Keenable search handoff are implemented. JD-based building remains optional. Full authenticated user onboarding, representative quality, Matcher, Tailor and Critic remain separate pending work.",
   "framework": {
     "name": "LangGraph",
     "version": "1.5.2",
@@ -16,7 +16,7 @@
       "title": "Master Agent",
       "kind": "coordinator",
       "description": "Coordinates every top-level agent, owns workflow state and routes every exchange.",
-      "next": "Connect production adapters and durable workflow state after the routing foundation.",
+      "next": "Resume-profile discovery dispatch is implemented; connect remaining production agents and durable workflow state.",
       "outputs": "Routed tasks, scoped inputs, decisions, revision requests and validated save commands."
     },
     {
@@ -42,7 +42,7 @@
       "title": "Profile Builder",
       "kind": "subagent",
       "parent": "profile",
-      "description": "Reviews 10–15 selected JDs, confirms real experience and develops multiple role profiles.",
+      "description": "Proposes roles from approved resume facts, or maps requirements from 10–15 selected JDs; user approval is separate.",
       "next": "Validate requirement coverage, prior-answer reuse and role profiles against real model output.",
       "outputs": "Role requirements, confirmed supported tasks and separate approved role profiles."
     },
@@ -52,7 +52,7 @@
       "kind": "agent",
       "parent": "master",
       "description": "Job discovery, source evidence, application links and shortlists. Original tracker points retain their history when reassigned.",
-      "next": "Connect role profiles through Master and complete structured job packets.",
+      "next": "Validate the authenticated profile handoff with the user, then complete structured job packets and Matcher integration.",
       "outputs": "Shortlisted jobs with full descriptions, application links and grounded job details."
     },
     {
@@ -1516,7 +1516,9 @@
       ],
       "acceptance": "All agent requests and results pass through Master; agents receive only required inputs.",
       "blockers": [],
-      "notes": [],
+      "notes": [
+        "2026-10-29: Optional resume-only intake and bounded Profile → Master → Scout discovery added as separate deliverables. Existing JD intake and full pipeline acceptance are preserved."
+      ],
       "outputLinks": []
     },
     {
@@ -1802,7 +1804,8 @@
       ],
       "notes": [
         "A tested intake boundary exists in the workflow foundation; a real intake UI and persistence are not yet built.",
-        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
+        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
+        "2026-10-29: Optional resume-only intake and bounded Profile → Master → Scout discovery added as separate deliverables. Existing JD intake and full pipeline acceptance are preserved."
       ],
       "outputLinks": [
         {
@@ -1919,7 +1922,8 @@
         "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
-        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
+        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
+        "2026-10-29: Optional resume-only intake and bounded Profile → Master → Scout discovery added as separate deliverables. Existing JD intake and full pipeline acceptance are preserved."
       ],
       "outputLinks": [
         {
@@ -2364,7 +2368,8 @@
       "acceptance": "Load approved snapshots through Profile → Memory without ten new JDs or repeated fact approval.",
       "blockers": [],
       "notes": [
-        "Added with the user-approved Profile workflow; source implementation and operational activation are tracked separately."
+        "Added with the user-approved Profile workflow; source implementation and operational activation are tracked separately.",
+        "2026-10-29: Optional resume-only intake and bounded Profile → Master → Scout discovery added as separate deliverables. Existing JD intake and full pipeline acceptance are preserved."
       ],
       "outputLinks": [
         {
@@ -2682,6 +2687,71 @@
         }
       ],
       "evidence": "Diagram model reference/coverage tests, TypeScript and eight React SSR/component interaction checks. Browser layout and full Profile flows remain separately tracked."
+    },
+    {
+      "id": "builder-resume-only",
+      "owner": "profile-builder",
+      "title": "Resume-only role building without JD intake",
+      "dependsOn": [
+        "profile-gemini-analysis"
+      ],
+      "acceptance": "An explicit resume mode uses only approved non-personal facts, validates supporting references, proposes roles without JD requirements, requires separate role approval and permits snapshot activation. Existing JD mode remains available.",
+      "stage": "profile",
+      "status": "complete",
+      "detail": "An explicit resume mode uses only approved non-personal facts, validates supporting references, proposes roles without JD requirements, requires separate role approval and permits snapshot activation. Existing JD mode remains available.",
+      "blockers": [],
+      "notes": [
+        "2026-10-29: Implementation added; synthetic regression checks and release verification in progress. Full authenticated browser onboarding remains tracked separately.",
+        "Bounded implementation and synthetic validation complete. Actual user role review, activation and hosted job search remain user onboarding steps; full browser/mobile and representative quality remain tracked separately."
+      ],
+      "outputLinks": [
+        {
+          "label": "Profile workspace",
+          "url": "/profile"
+        },
+        {
+          "label": "Main Keenable search",
+          "url": "/"
+        },
+        {
+          "label": "Structural diagram",
+          "url": "/profile/architecture"
+        }
+      ],
+      "evidence": "2026-10-29: 152 automated tests and TypeScript passed; 10 actual Profile/Scout component scenarios passed with synthetic state. One live Gemini resume-builder request produced three valid proposed roles from synthetic approved facts, without JDs, real approvals or personal profile reads."
+    },
+    {
+      "id": "master-profile-scout",
+      "owner": "master",
+      "title": "Approved Profile to Master to Keenable discovery",
+      "dependsOn": [
+        "builder-resume-only",
+        "profile-supabase-migration"
+      ],
+      "acceptance": "The selected role from the current approved snapshot reaches main-page Keenable search through Master and Profile-owned memory. Search revalidates the snapshot; private facts and original resume text are excluded; location and filters remain user-controlled.",
+      "stage": "profile",
+      "status": "complete",
+      "detail": "The selected role from the current approved snapshot reaches main-page Keenable search through Master and Profile-owned memory. Search revalidates the snapshot; private facts and original resume text are excluded; location and filters remain user-controlled.",
+      "blockers": [],
+      "notes": [
+        "2026-10-29: Implementation added; synthetic regression checks and release verification in progress. Full authenticated browser onboarding remains tracked separately.",
+        "Bounded implementation and synthetic validation complete. Actual user role review, activation and hosted job search remain user onboarding steps; full browser/mobile and representative quality remain tracked separately."
+      ],
+      "outputLinks": [
+        {
+          "label": "Profile workspace",
+          "url": "/profile"
+        },
+        {
+          "label": "Main Keenable search",
+          "url": "/"
+        },
+        {
+          "label": "Structural diagram",
+          "url": "/profile/architecture"
+        }
+      ],
+      "evidence": "2026-10-29: 152 automated tests and TypeScript passed; 10 actual Profile/Scout component scenarios passed with synthetic state. One live Gemini resume-builder request produced three valid proposed roles from synthetic approved facts, without JDs, real approvals or personal profile reads."
     }
   ],
   "communication": [
@@ -2833,6 +2903,11 @@
       "date": "2026-10-29",
       "title": "Profile approval synchronization: synthetic regressions",
       "detail": "All 145 automated tests and TypeScript passed. Eight actual workspace-component scenarios validate late-read protection, exact saved receipt, prior-decision/version guards, duplicate input locking, explicit reject/re-approve, stale-save failure visibility and indexing refresh. Tests use synthetic in-memory state with no user profile writes or model calls. Full browser and real-user decision verification remain pending."
+    },
+    {
+      "date": "2026-10-29",
+      "title": "Profile resume-only and Master discovery handoff",
+      "detail": "152 automated tests and TypeScript passed. Ten actual component scenarios cover the zero-JD build/approval/activation/link path, manual fallback, preserved location and filters, server-bound snapshot selection and late-load cancellation. One live synthetic Gemini request returned three valid proposed roles. Eight approval and eight diagram component regressions also passed. Desktop local layout and Role profiles navigation were visually inspected; local Supabase networking was restricted, so full authenticated onboarding and mobile review remain unverified. No real user approvals, resume model calls or live Keenable searches were performed."
     }
   ]
 }

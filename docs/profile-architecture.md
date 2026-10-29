@@ -1,11 +1,13 @@
 # Profile Agent: structure and reviewed progress
 
-Reviewed 2026-10-29; record revision 2026-10-29.7. Generated from the same task mapping and reviewed record as /profile/architecture. States summarize tracked acceptance; they are not live health checks. There are 29 distinct items in the diagram, including Master dispatch; shared items are counted once.
+Reviewed 2026-10-29; record revision 2026-10-29.8. Generated from the same task mapping and reviewed record as /profile/architecture. States summarize tracked acceptance; they are not live health checks. There are 31 distinct items in the diagram, including Master dispatch; shared items are counted once.
 
 ```mermaid
 flowchart TD
-    U["You: documents, corrections and individual approvals"] <--> M["Master — not started"]
+    U["You: documents, corrections and individual approvals"] <--> M["Master — in progress"]
     M <--> P["Profile Agent — in progress"]
+    M <--> SC["Scout: approved-role discovery"]
+    SC <--> K["Keenable job search"]
     P <--> F["Fact Agent — in progress"]
     P <--> B["Profile Builder — in progress"]
     P <--> R["Profile memory interface — in progress"]
@@ -16,15 +18,18 @@ flowchart TD
     R <--> V[("Pinecone — complete")]
 ```
 
+Resume-only route: resume → approved facts → proposed roles → role approval → activated snapshot → Profile → Master → Scout → Keenable. JDs are optional; the JD-based builder still takes 10–15 analyzed descriptions. Search preferences remain user-controlled, and discovery does not establish job suitability.
+
 Gemini provides analysis and embeddings. Supabase remains authoritative; Pinecone is a derived semantic index. Profile's memory interface mediates all storage and vector operations. Children cannot access memory or communicate directly. Model output is a proposal; only the user approves real facts and role profiles. JD requirements are not evidence of user experience.
 
 ## Layer status and work
 
 ### Master
 
-Routes requests and approved results. Full production dispatch is still a separate deliverable.
+Routes requests and approved results. Approved role discovery is connected to Keenable; full pipeline dispatch remains pending.
 
 - **not started** — Production dispatch and scoped payloads (`master-routing`)
+- **complete** — Approved Profile to Master to Keenable discovery (`master-profile-scout`) Evidence: 2026-10-29: 152 automated tests and TypeScript passed; 10 actual Profile/Scout component scenarios passed with synthetic state. One live Gemini resume-builder request produced three valid proposed roles from synthetic approved facts, without JDs, real approvals or personal profile reads.
 
 ### Profile Agent
 
@@ -50,12 +55,13 @@ Extracts factual assertions with exact quotations. It cannot approve a fact, acc
 
 ### Profile Builder
 
-Proposes role profiles, requirement mappings and useful questions. Initial onboarding uses 10–15 selected JDs; saved profiles can be reused.
+Proposes role profiles, requirement mappings and useful questions. Resume-only building skips JDs. Optional JD building uses 10–15 selected and analyzed descriptions; saved profiles can be reused.
 
 - **in progress** — Intake 10–15 selected job descriptions (`builder-intake`): Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows.
 - **in progress** — Extract role requirements (`builder-requirements`): Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows.
 - **in progress** — Confirm actual task experience (`builder-confirmation`): Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows.
 - **in progress** — Build multiple approved role profiles (`builder-profiles`): Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows.
+- **complete** — Resume-only role building without JD intake (`builder-resume-only`) Evidence: 2026-10-29: 152 automated tests and TypeScript passed; 10 actual Profile/Scout component scenarios passed with synthetic state. One live Gemini resume-builder request produced three valid proposed roles from synthetic approved facts, without JDs, real approvals or personal profile reads.
 
 ### Gemini analysis
 
@@ -115,6 +121,7 @@ Searches vectors by meaning. Matches are reloaded from current approved Supabase
 - 2026-10-29 — **Profile diagram: local component verification**: 140 automated tests and TypeScript passed. Eight React SSR/component checks passed for nine layers, task selection, configuration presence, polling, offline preservation, recovery, visibility and cancellation. Native Chrome was in active user use and browser-extension access unavailable; visual/mobile/full authenticated browser QA remains pending.
 - 2026-10-29 — **Gemini: hosted release verification**: Release 10 deployed successfully with environment revision 3. All 14 HTTP checks passed: Gemini contract, 84-task reviewed record, diagram link, Supabase migration/load reachability and owner/visitor/origin boundaries. No hosted model calls, personal profile reads or browser QA. Source fd6e868ab5cb970926addc7b5d061ccbaade5abc.
 - 2026-10-29 — **Profile approval synchronization: synthetic regressions**: All 145 automated tests and TypeScript passed. Eight actual workspace-component scenarios validate late-read protection, exact saved receipt, prior-decision/version guards, duplicate input locking, explicit reject/re-approve, stale-save failure visibility and indexing refresh. Tests use synthetic in-memory state with no user profile writes or model calls. Full browser and real-user decision verification remain pending.
+- 2026-10-29 — **Profile resume-only and Master discovery handoff**: 152 automated tests and TypeScript passed. Ten actual component scenarios cover the zero-JD build/approval/activation/link path, manual fallback, preserved location and filters, server-bound snapshot selection and late-load cancellation. One live synthetic Gemini request returned three valid proposed roles. Eight approval and eight diagram component regressions also passed. Desktop local layout and Role profiles navigation were visually inspected; local Supabase networking was restricted, so full authenticated onboarding and mobile review remain unverified. No real user approvals, resume model calls or live Keenable searches were performed.
 
 Interactive structure: /profile/architecture. Full reviewed tracker: /progress.
 Regenerate this file with `node scripts/profile-architecture-doc.mjs` whenever the reviewed record changes.

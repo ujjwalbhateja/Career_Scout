@@ -19,5 +19,7 @@ test('diagram updates a layer when the reviewed record changes and distinguishes
   assert.equal(layerState(changed,'analysis'),'complete');
   changed.tasks.find(task=>task.id==='profile-provider-activation').status='blocked';
   assert.equal(layerState(changed,'analysis'),'blocked');
-  assert.equal(layerState(record,'master'),'not_started');
+  assert.equal(layerState(record,'master'),'in_progress');
+  assert.ok(layerTasks(record,'master').some(task=>task.id==='master-profile-scout'));
+  assert.ok(layerTasks(record,'builder').some(task=>task.id==='builder-resume-only'));
 });

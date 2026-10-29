@@ -115,7 +115,9 @@ available to explicit profile deletion, including both namespaces on one host.
 
 ## JD and Builder records
 
-Initial building requires 10–15 distinct selected and analyzed JDs. Later
+Resume-only building (explicit mode `resume`) uses approved experience, education and skills without JDs. Gemini returns role hypotheses with supporting fact IDs; all references must resolve to approved non-personal facts. Proposals have `basis: resume`, no JD mappings or fabricated requirements, and require separate user role approval and snapshot activation.
+
+Optional JD-based building requires 10–15 distinct selected and analyzed JDs. Later
 application JDs can be added singly without repeating onboarding.
 
 Preserve required/preferred tasks, skills, qualifications, experience, sector,
@@ -142,8 +144,10 @@ explicit version. approvedProfileLoader(service) captures the trusted owner and
 loads through Profile → Memory without repeating JD intake or fact approval.
 
 Changing the onboarding selection does not silently alter an existing snapshot.
-New finalization must match the newly assessed JD set. Document withdrawal,
+JD-based finalization must match the newly assessed JD set. Resume-based roles remain independent of the optional selected JD set. Document withdrawal,
 changed facts or withdrawn approval invalidate affected dependencies.
+
+The main-page search handoff accepts only role/snapshot identifiers in the URL. Master invokes Profile → Memory to load the current approved snapshot, selects the approved role and dispatches a scoped search plan to the existing Keenable adapter. Each linked search revalidates the current snapshot. The browser preserves location/filter preferences; role titles start in exact mode with no mandatory skill filters. Editing the role or breadth detaches the linked profile. Resume text and factual records are not sent to Keenable. Manual search remains available. This discovery path does not activate Matcher, Tailor, Critic or application storage.
 
 New-JD assessments use only facts in their bound snapshot. They do not generate
 tailored resumes or ATS percentages.

@@ -32,6 +32,7 @@ const defaults = {
   preferSponsorship:false,includeUnknown:true,searchDescriptions:true,includeUnverified:true,showClosed:false,maxAge:'0',
 };
 type Criteria = typeof defaults;
+type ProfilePlan={selection:{roleId:string;version:string};roleName:string;basis:string;criteria:{roles:string}};
 const labels:Record<string,string> = {any:'Any',intern:'Intern / apprentice',junior:'Entry / junior',mid:'Mid-level',senior:'Senior',lead:'Lead / staff / principal',manager:'Manager',director:'Director / executive',remote:'Remote',hybrid:'Hybrid','on-site':'On-site','full-time':'Full-time','part-time':'Part-time',contract:'Contract / freelance',internship:'Internship'};
 const sponsorLabel = (s:string) => s==='no'?'No sponsorship':s==='yes'?'Sponsorship available':'Sponsorship not stated';
 const verificationLabel = (j:Job) => j.verification?.status==='available'?'Application page available':j.verification?.status==='closed'?'Closed':'Not verified';
@@ -58,6 +59,7 @@ function storedJobs(value:unknown):Job[] {
 }
 
 export default function Scout() {
+  const [profilePlan,setProfilePlan]=useState<ProfilePlan|null>(null),[profileError,setProfileError]=useState(''),[profileLoading,setProfileLoading]=useState(false);
   const [criteria,setCriteria]=useState<Criteria>(defaults),[ready,setReady]=useState(false),[tab,setTab]=useState('search');
   const [keywordsEdited,setKeywordsEdited]=useState(false),[provider,setProvider]=useState<Provider|null>(null),[providerError,setProviderError]=useState('');
   const [jobs,setJobs]=useState<Job[]>([]),[saved,setSaved]=useState<Job[]>([]),[imported,setImported]=useState<Job[]>([]);
@@ -67,10 +69,12 @@ export default function Scout() {
   const [url,setUrl]=useState(''),[links,setLinks]=useState<{url:string;title:string}[]>([]),[paste,setPaste]=useState(false);
   const [manual,setManual]=useState({title:'',company:'',location:'',description:''});
   const [selected,setSelected]=useState<Job|null>(null),[sort,setSort]=useState('relevance');
-  const detailRef=useRef<HTMLDialogElement>(null),requestRef=useRef(0),abortRef=useRef<AbortController|null>(null);
+  const detailRef=useRef<HTMLDialogElement>(null),requestRef=useRef(0),abortRef=useRef<AbortController|null>(null),profileAbortRef=useRef<AbortController|null>(null);
   const batchesRef=useRef(new Map<number,SearchResult>()),rejectedRef=useRef(new Set<string>());
 
+  function detachProfile(){profileAbortRef.current?.abort();setProfilePlan(null);setProfileError('');setProfileLoading(false);window.history.replaceState(null,'','/');}
   function field<K extends keyof Criteria>(name:K,value:Criteria[K]) {
+    if(['roles','relatedKeywords','mode'].includes(name))detachProfile();
     setCriteria(c=>{const next={...c,[name]:value};if((name==='roles'||name==='mode')&&!keywordsEdited)next.relatedKeywords=suggestions(next);return next;});
   }
   useEffect(()=>{
@@ -92,6 +96,18 @@ export default function Scout() {
     fetch('/api/scout',{signal:controller.signal}).then(async r=>{if(!r.ok)throw new Error('Search connection status is unavailable.');return await r.json() as Provider;}).then(setProvider).catch(e=>{if(e.name!=='AbortError')setProviderError('Connection status unavailable. You can still try a search.');});
     return ()=>{controller.abort();abortRef.current?.abort();};
   },[]);
+  useEffect(()=>{
+    if(!ready)return;
+    const params=new URLSearchParams(window.location.search),roleId=params.get('profileRole'),version=params.get('profileVersion');
+    if(!roleId&&!version)return;
+    const controller=new AbortController();profileAbortRef.current=controller;setProfileLoading(true);setProfileError('');
+    fetch('/api/scout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'profilePlan',profileSelection:{roleId,version}}),signal:controller.signal}).then(async response=>{
+      const plan=await response.json() as ProfilePlan & {error?:string};if(!response.ok)throw new Error(plan.error||'Could not connect your profile.');
+      if(controller.signal.aborted)return;
+      setProfilePlan(plan);setKeywordsEdited(true);setCriteria(current=>({...current,roles:plan.criteria.roles,relatedKeywords:'',mode:'exact'}));
+    }).catch(e=>{if(!controller.signal.aborted)setProfileError(e.message||'Could not connect your profile.');}).finally(()=>{if(!controller.signal.aborted)setProfileLoading(false);});
+    return()=>controller.abort();
+  },[ready]);
   useEffect(()=>{if(!ready)return;try{localStorage.setItem('career-scout.criteria.v2',JSON.stringify(criteria));localStorage.setItem('career-scout.saved.v1',JSON.stringify(saved));localStorage.setItem('career-scout.imported.v1',JSON.stringify(imported));}catch{setNotice('Browser storage is full or unavailable. Export your jobs before closing this page.');}},[criteria,saved,imported,ready]);
   useEffect(()=>{if(selected&&!detailRef.current?.open)detailRef.current?.showModal();},[selected]);
 
@@ -101,6 +117,7 @@ export default function Scout() {
   }
   async function runSearch(event?:React.FormEvent,options:{more?:boolean;refresh?:boolean}={}) {
     event?.preventDefault();
+    if(profileLoading||profileError){setError('Finish connecting your profile, or choose Use manual search.');return;}
     if(!criteria.roles.trim()){setError('Enter at least one role or role keyword.');return;}
     if(options.more&&summary?.phase!=='complete')return;
     const batch=options.more?(summary?.batch??0)+1:0;
@@ -132,7 +149,7 @@ export default function Scout() {
       if(message.type==='complete'){completed=true;setProgress('Search complete.');}
     };
     try {
-      const response=await fetch('/api/scout',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/x-ndjson'},body:JSON.stringify({action:'search',stream:true,...criteria,batch,refresh:!!options.refresh}),signal:controller.signal});
+      const response=await fetch('/api/scout',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/x-ndjson'},body:JSON.stringify({action:'search',stream:true,...criteria,...(profilePlan?{profileSelection:profilePlan.selection}:{}),batch,refresh:!!options.refresh}),signal:controller.signal});
       if(!response.ok){const result=await response.json().catch(()=>({})) as {error?:string};throw new Error(result.error||`Search failed (${response.status}).`);}
       if(response.headers.get('content-type')?.includes('application/x-ndjson')) {
         if(!response.body)throw new Error('The search response was empty.');
@@ -173,6 +190,7 @@ export default function Scout() {
     <main>
       <section className="intro"><div><div className="eyebrow"><span/> YOUR JOB SEARCH, WITH DIRECTION</div><h1>{tab==='import'?<>Found a role?<br/><em>Bring it here.</em></>:tab==='saved'?<>Good opportunities.<br/><em>All in one place.</em></>:<>Find the roles<br/><em>worth your time.</em></>}</h1><p>{tab==='import'?'Import an individual job or a company career board. Keep its evidence in one place.':tab==='saved'?'Your saved roles, ready to compare and pass to the future resume Matcher.':'Search the web with Keenable. Explore related roles, check the evidence, and build your shortlist.'}</p></div><div className="intro-side"><div className="orbit"><Compass size={70} strokeWidth={1}/><span className="orbit-dot"/></div><span><ShieldCheck size={15}/> Your shortlist is saved in this browser</span></div></section>
       {notice&&<div className="notice" role="status">{notice}<button aria-label="Dismiss notice" onClick={()=>setNotice('')}><X size={16}/></button></div>}
+      {(profileLoading||profileError||profilePlan)&&<section className="notice" aria-live="polite"><div>{profileLoading?'Connecting your approved profile through Master…':profileError||('Profile → Master → Scout: '+profilePlan?.roleName+' · '+profilePlan?.selection.version)}{profilePlan&&<p>Review location and filters, then Search. Your resume and contact details are kept out of the Keenable request. Job suitability still needs a separate assessment.</p>}<Link href="/profile">Review my profile</Link>{' · '}<button type="button" className="text-button" onClick={detachProfile}>Use manual search</button></div></section>}
       {provider?.configured===false&&<div className="error-message" role="alert">Keenable is not connected on this deployment. The site owner needs to configure the server connection.</div>}
       {sourceOpen&&<section className="source-settings"><div className="section-head"><div><span className="eyebrow">SEARCH COVERAGE</span><h2>Keenable discovery, evidence you can inspect</h2></div><button className="icon-button" aria-label="Close search coverage" onClick={()=>setSourceOpen(false)}><X size={20}/></button></div><div className="source-grid"><div><span className="connection-status"><Globe2 size={18}/>{provider?(provider.configured?'Keenable connected':'Connection needs setup'):providerError||'Checking connection…'}</span><p className="source-copy">Searches individual job pages across the indexed web. Employer application links are preferred when available. General job directories and duplicate copies are filtered.</p><p className="source-copy">Each batch uses up to {provider?.limits?.queries||4} search requests and {provider?.limits?.checks||10} page checks. Search more runs another bounded batch, up to {provider?.limits?.batches||3} batches per search.</p></div><div className="broad-connection"><h3>Know what has been checked</h3><p><strong>Application page available</strong> means readable job evidence was found without a detected closure notice. <strong>Not verified</strong> means the page could not be confirmed. Closed roles are hidden unless you include them.</p><p className="source-copy">Posting dates come from job evidence. Index dates show when a search engine collected a page; they do not prove a vacancy is new.</p></div></div><div className="coverage-note">Coverage is bounded and cannot guarantee every job or current hiring activity. Direct Greenhouse, Lever, Ashby, and structured-page imports remain available under Import a role. Salary, eligibility, and sponsorship stay unknown when the source does not say.</div></section>}
       <div className={tab==='search'?'workspace':'workspace single'}>

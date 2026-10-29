@@ -8,6 +8,8 @@ const titles=Object.fromEntries(PROFILE_LAYERS.map(layer=>[layer.id,layer.title+
 const graph=`flowchart TD
     U["You: documents, corrections and individual approvals"] <--> M["${titles.master}"]
     M <--> P["${titles.profile}"]
+    M <--> SC["Scout: approved-role discovery"]
+    SC <--> K["Keenable job search"]
     P <--> F["${titles.fact}"]
     P <--> B["${titles.builder}"]
     P <--> R["${titles.memory}"]
@@ -23,6 +25,8 @@ Reviewed ${record.reviewedOn}; record revision ${record.revision}. Generated fro
 
 \`\`\`mermaid
 ${graph}\`\`\`
+
+Resume-only route: resume → approved facts → proposed roles → role approval → activated snapshot → Profile → Master → Scout → Keenable. JDs are optional; the JD-based builder still takes 10–15 analyzed descriptions. Search preferences remain user-controlled, and discovery does not establish job suitability.
 
 Gemini provides analysis and embeddings. Supabase remains authoritative; Pinecone is a derived semantic index. Profile's memory interface mediates all storage and vector operations. Children cannot access memory or communicate directly. Model output is a proposal; only the user approves real facts and role profiles. JD requirements are not evidence of user experience.
 

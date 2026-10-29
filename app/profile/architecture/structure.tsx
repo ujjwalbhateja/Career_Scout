@@ -38,7 +38,7 @@ export default function ProfileArchitecture({initialRecord}:{initialRecord:Progr
     <div className="pa-summary" aria-label="Profile architecture tracking counts">{[['complete','Complete'],['in_progress','In progress'],['blocked','Blocked'],['in_review','In review'],['not_started','Pending']].map(([status,label])=><div key={status}><strong>{counts[status]}</strong><span>{label}</span></div>)}</div>
     <p className="pa-caption">Counts cover {counts.total} distinct tracking items in this diagram, including Master dispatch. Related layers share items; they are counted once. Diagram states are reviewed evidence, not live execution indicators.</p>
     {error&&<div className="pf-message error" role="status">{error}</div>}
-    <div className="pa-workspace">
+    <article className="pf-card"><h2>Resume to job search — JDs optional</h2><p>Resume → Fact Agent → your fact approvals → Profile Builder → your role approval → activated Supabase snapshot → Profile → Master → Scout → Keenable jobs.</p><p>Builder works through Profile. You choose a proposed role before search. Location and filters stay under your control. Search discovery does not establish job fit; Matcher, Tailor and Critic are separate pending layers.</p><Link href="/profile">Build or review roles</Link>{' · '}<Link href="/">Open main job search</Link></article><div className="pa-workspace">
       <section className="pa-diagram" aria-label="Profile coordination and storage diagram">
         <div className="pa-spine">{node('master')}<div className="pa-connector"><ArrowUpDown size={18}/><span>Requests / approved results</span></div>{node('profile')}</div>
         <div className="pa-fork" aria-hidden="true"><span/><span/></div>
