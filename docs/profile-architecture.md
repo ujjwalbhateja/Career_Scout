@@ -1,6 +1,6 @@
 # Profile Agent: structure and reviewed progress
 
-Reviewed 2026-10-29; record revision 2026-10-29.5. Generated from the same task mapping and reviewed record as /profile/architecture. States summarize tracked acceptance; they are not live health checks. There are 29 distinct items in the diagram, including Master dispatch; shared items are counted once.
+Reviewed 2026-10-29; record revision 2026-10-29.6. Generated from the same task mapping and reviewed record as /profile/architecture. States summarize tracked acceptance; they are not live health checks. There are 29 distinct items in the diagram, including Master dispatch; shared items are counted once.
 
 ```mermaid
 flowchart TD
@@ -9,10 +9,10 @@ flowchart TD
     P <--> F["Fact Agent — in progress"]
     P <--> B["Profile Builder — in progress"]
     P <--> R["Profile memory interface — in progress"]
-    F <--> A["Gemini analysis — blocked"]
+    F <--> A["Gemini analysis — in progress"]
     B <--> A
     R <--> S[("Supabase — in progress")]
-    R <--> E["Gemini embeddings — blocked"]
+    R <--> E["Gemini embeddings — in progress"]
     R <--> V[("Pinecone — complete")]
 ```
 
@@ -62,7 +62,7 @@ Proposes role profiles, requirement mappings and useful questions. Initial onboa
 Gemini 3.1 Flash-Lite returns constrained JSON for extraction, JD analysis, role building and assessment. Code validates source evidence; you approve individual versions.
 
 - **complete** — Gemini analysis adapter (`profile-gemini-analysis`) Evidence: Gemini request/response, malformed/truncated/refused output, quota preservation and actual Workers transport tests; local live synthetic facts passed.
-- **blocked** — Activate hosted profile providers (`profile-provider-activation`): Deploy environment revision 3 with the saved Gemini server secret and verify hosted execution. Complete authenticated hosted Profile workflow validation.
+- **in progress** — Activate hosted profile providers (`profile-provider-activation`): Verify Gemini model execution and the complete Profile workflow in the authenticated hosted user session.
 - **in progress** — Evaluate profile extraction and semantic retrieval (`profile-embedding-evaluation`): Complete representative model-quality and authenticated hosted workflow evaluation; bounded synthetic checks do not establish full real-profile readiness.
 
 ### Profile memory interface
@@ -87,7 +87,7 @@ Stores originals, source passages, factual proposals, approvals, role profiles, 
 Gemini Embedding 001 converts approved passages and search queries into vectors. A new per-owner namespace keeps Gemini and legacy OpenAI vectors separate.
 
 - **complete** — Gemini embeddings and vector isolation (`profile-gemini-embeddings`) Evidence: Document/query task types, dimensions, unchanged-record reuse, namespace migration and same-host dual-namespace purge tests; local live synthetic embeddings passed.
-- **blocked** — Activate hosted profile providers (`profile-provider-activation`): Deploy environment revision 3 with the saved Gemini server secret and verify hosted execution. Complete authenticated hosted Profile workflow validation.
+- **in progress** — Activate hosted profile providers (`profile-provider-activation`): Verify Gemini model execution and the complete Profile workflow in the authenticated hosted user session.
 - **in progress** — Evaluate profile extraction and semantic retrieval (`profile-embedding-evaluation`): Complete representative model-quality and authenticated hosted workflow evaluation; bounded synthetic checks do not establish full real-profile readiness.
 
 ### Pinecone
@@ -111,6 +111,7 @@ Searches vectors by meaning. Matches are reloaded from current approved Supabase
 - 2026-10-29 — **Gemini: initial live synthetic check**: Three local Gemini requests succeeded: source-linked extraction produced four pending synthetic facts; document/query embeddings had 3072 dimensions; reporting-related passages ranked above unrelated equipment text. No stored profile read, personal upload, real approval or OpenAI call. This is a smoke check, not representative full workflow evaluation.
 - 2026-10-29 — **Gemini: synthetic JD, Builder and Pinecone flow**: Six Gemini requests passed extraction, one live JD extraction, role proposals and assessment; the JD result was copied onto ten distinct synthetic fixture IDs to exercise onboarding without ten extra calls. Unsupported SQL stayed unmapped, roles stayed proposed, and three synthetic Gemini vectors were searched in an isolated Pinecone namespace. Cleanup requested. No real profile read or real approvals.
 - 2026-10-29 — **Profile diagram: local component verification**: 140 automated tests and TypeScript passed. Eight React SSR/component checks passed for nine layers, task selection, configuration presence, polling, offline preservation, recovery, visibility and cancellation. Native Chrome was in active user use and browser-extension access unavailable; visual/mobile/full authenticated browser QA remains pending.
+- 2026-10-29 — **Gemini: hosted release verification**: Release 10 deployed successfully with environment revision 3. All 14 HTTP checks passed: Gemini contract, 84-task reviewed record, diagram link, Supabase migration/load reachability and owner/visitor/origin boundaries. No hosted model calls, personal profile reads or browser QA. Source fd6e868ab5cb970926addc7b5d061ccbaade5abc.
 
 Interactive structure: /profile/architecture. Full reviewed tracker: /progress.
 Regenerate this file with `node scripts/profile-architecture-doc.mjs` whenever the reviewed record changes.

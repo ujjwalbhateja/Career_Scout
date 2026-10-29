@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
-  "revision": "2026-10-29.5",
+  "revision": "2026-10-29.6",
   "reviewedOn": "2026-10-29",
-  "summary": "Profile is moving to Gemini analysis and embeddings. Local synthetic extraction and 3072-dimension retrieval checks passed. Supabase and Pinecone are retained; hosted Gemini activation and full workflow evaluation remain separate gates. The Profile diagram shares this reviewed record.",
+  "summary": "Gemini analysis and embeddings are implemented and deployed with a server-only key. Supabase and Pinecone are retained. Local synthetic model/Pinecone checks and hosted HTTP/access checks passed. Full authenticated runtime, representative quality and real-user onboarding remain in progress.",
   "framework": {
     "name": "LangGraph",
     "version": "1.5.2",
-    "mode": "Executable Profile implementation; Gemini activation and end-to-end validation tracked separately",
-    "note": "Supabase persistence and Pinecone raw-vector transport were verified. Gemini replaces both OpenAI calls with no OpenAI fallback. Initial local synthetic extraction/embedding checks passed; full hosted/user workflow validation is pending.",
+    "mode": "Profile implementation deployed with Gemini; full authenticated workflow validation remains",
+    "note": "Gemini adapters and the structural diagram are deployed. Local synthetic extraction, JD/Builder/assessment and Pinecone retrieval passed, and hosted storage/access checks passed. Configuration and these bounded checks do not establish full real-profile readiness.",
     "documentation": "https://docs.langchain.com/oss/javascript/langgraph/thinking-in-langgraph"
   },
   "agents": [
@@ -25,7 +25,7 @@
       "kind": "coordinator",
       "parent": "master",
       "description": "Coordinates Fact Agent and Profile Builder and consolidates approved profile outputs.",
-      "next": "Configure hosted Gemini and verify the complete Profile workflow, preserving individual approvals.",
+      "next": "Verify Gemini in the authenticated hosted Profile workflow, then finish representative quality and individual user review.",
       "outputs": "Verified facts and approved role profiles, returned only to Master."
     },
     {
@@ -2400,7 +2400,7 @@
       "owner": "memory",
       "title": "Activate hosted profile providers",
       "stage": "profile",
-      "status": "blocked",
+      "status": "in_progress",
       "detail": "Apply Supabase migration, configure runtime/model secrets and verify authenticated hosted profile persistence.",
       "dependsOn": [
         "profile-supabase-migration",
@@ -2408,8 +2408,7 @@
       ],
       "acceptance": "Apply Supabase migration, configure runtime/model secrets and verify authenticated hosted profile persistence.",
       "blockers": [
-        "Deploy environment revision 3 with the saved Gemini server secret and verify hosted execution.",
-        "Complete authenticated hosted Profile workflow validation."
+        "Verify Gemini model execution and the complete Profile workflow in the authenticated hosted user session."
       ],
       "notes": [
         "Added with the user-approved Profile workflow; source implementation and operational activation are tracked separately.",
@@ -2418,12 +2417,25 @@
         "2026-10-29: User-reported hosted GET /api/profile failure reproduced under workerd before any upstream call. Replaced unsupported fetch redirect:error with manual redirect handling and explicit redirect rejection; actual-runtime tests cover provider transport and redirect credential protection. Added metadata-only hosted connection probe.",
         "2026-10-29: Dedicated Career Scout key saved only in ignored local environment; metadata requests for both selected models returned 200. A minimal synthetic inference request returned HTTP 429 with type insufficient_quota. No resume data was sent by this diagnostic. Fixed local error handling to distinguish credits, spend/usage limits, generic quota and transient throttling without reflecting provider messages or automatically retrying billing errors. Hosted release is unchanged.",
         "2026-10-29: User selected Gemini analysis and embeddings. Local key saved without exposing it. Live synthetic check passed three Gemini requests: source-linked extraction and document/query embeddings at 3072 dimensions. OpenAI calls: zero. Hosted activation is tracked separately.",
-        "2026-10-29: Gemini key configured as a hosted secret in environment revision 3; application deployment must apply it. Existing Supabase/Pinecone/Keenable secrets were preserved."
+        "2026-10-29: Gemini key configured as a hosted secret in environment revision 3; application deployment must apply it. Existing Supabase/Pinecone/Keenable secrets were preserved.",
+        "2026-10-29: Release 10 deployed with environment revision 3. All 14 hosted HTTP checks passed, including Gemini contract, reviewed record, Supabase health and identity/origin/private-access boundaries. Deployment and missing-key blockers are resolved; no hosted model request or personal profile read was part of these checks."
       ],
       "outputLinks": [
         {
           "label": "Profile workspace",
           "url": "/profile"
+        }
+      ],
+      "statusHistory": [
+        {
+          "status": "blocked",
+          "date": "2026-10-29",
+          "reason": "Previous reviewed release."
+        },
+        {
+          "status": "in_progress",
+          "date": "2026-10-29",
+          "reason": "Gemini server secret applied in hosted environment revision 3; release 10 deployed and 14 HTTP checks passed. Full authenticated model/profile flows remain."
         }
       ]
     },
@@ -2808,6 +2820,11 @@
       "date": "2026-10-29",
       "title": "Profile diagram: local component verification",
       "detail": "140 automated tests and TypeScript passed. Eight React SSR/component checks passed for nine layers, task selection, configuration presence, polling, offline preservation, recovery, visibility and cancellation. Native Chrome was in active user use and browser-extension access unavailable; visual/mobile/full authenticated browser QA remains pending."
+    },
+    {
+      "date": "2026-10-29",
+      "title": "Gemini: hosted release verification",
+      "detail": "Release 10 deployed successfully with environment revision 3. All 14 HTTP checks passed: Gemini contract, 84-task reviewed record, diagram link, Supabase migration/load reachability and owner/visitor/origin boundaries. No hosted model calls, personal profile reads or browser QA. Source fd6e868ab5cb970926addc7b5d061ccbaade5abc."
     }
   ]
 }
