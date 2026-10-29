@@ -174,3 +174,8 @@ test('activating an unchanged snapshot does not create another approval',async()
   const s=await finalized(),count=s.approvals.length,version=s.snapshots.at(-1).version;
   assert.equal(finalize(s,'actor').version,version);assert.equal(s.approvals.length,count);assert.equal(s.snapshots.length,1);
 });
+test('custom Supabase HTTP conflicts remain actionable 409 responses',async t=>{
+  t.mock.method(globalThis,'fetch',async()=>Response.json({code:'PT409',message:'profile_revision_conflict'},{status:409}));
+  const memory=new ProfileMemory({SUPABASE_URL:'https://fixture-project.supabase.co',SUPABASE_SECRET_KEY:'fixture-secret'},'fixture-owner');
+  await assert.rejects(memory.save(1,fixture()),error=>error.status===409&&/another tab/.test(error.message));
+});

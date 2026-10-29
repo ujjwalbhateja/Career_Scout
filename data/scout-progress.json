@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
-  "revision": "2026-10-29.1",
+  "revision": "2026-10-29.2",
   "reviewedOn": "2026-10-29",
-  "summary": "Keenable discovery remains active. Profile code now uses Supabase and Pinecone with reusable approvals; model credentials, hosted schema activation and live Profile validation remain pending.",
+  "summary": "Supabase schema, private storage and durable approvals are verified. Profile adapters and reusable approvals are deployed; OpenAI model credentials and real-model evaluation remain pending.",
   "framework": {
     "name": "LangGraph",
     "version": "1.5.2",
     "mode": "Executable workflow and Profile intake implementation; provider activation pending",
-    "note": "Profile has real provider adapters and review screens. Missing schema/model credentials fail explicitly. Daily application drafting is not activated.",
+    "note": "Supabase persistence and access controls passed live synthetic verification. Profile AI analysis and embeddings await OpenAI credentials; daily application drafting is not activated.",
     "documentation": "https://docs.langchain.com/oss/javascript/langgraph/thinking-in-langgraph"
   },
   "agents": [
@@ -963,12 +963,13 @@
         }
       ],
       "blockers": [
-        "Apply hosted Supabase migration.",
         "Configure OpenAI model credentials and validate real outputs."
       ],
       "notes": [
         "Preserved original tracker point. Ownership may change; progress and ownership history remain available.",
-        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
+        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
+        "2026-10-29: User ran the initial SQL migration. Live synthetic checks passed private upload/download, public-access denial, direct-table/RPC restrictions and approval persistence. Stale writes surfaced a service failure; tested PT409 correction prepared for SQL Editor.",
+        "2026-10-29: Corrected migration 2026-10-29.2 verified live. All 12 synthetic checks passed: private storage, persisted approval, denied direct/public/anonymous access, owner isolation, immediate HTTP 409 conflicts and content cleanup. No personal resume or model calls used."
       ],
       "outputLinks": [
         {
@@ -1020,7 +1021,6 @@
         }
       ],
       "blockers": [
-        "Apply hosted Supabase migration.",
         "Configure OpenAI model credentials and validate real outputs."
       ],
       "notes": [
@@ -1077,7 +1077,6 @@
         }
       ],
       "blockers": [
-        "Apply hosted Supabase migration.",
         "Configure OpenAI model credentials and validate real outputs."
       ],
       "notes": [
@@ -1577,7 +1576,6 @@
       ],
       "acceptance": "Return versioned outputs and unresolved questions through Master; never infer capability from JDs alone.",
       "blockers": [
-        "Apply hosted Supabase migration.",
         "Configure OpenAI model credentials and validate real outputs."
       ],
       "notes": [
@@ -1615,7 +1613,6 @@
       ],
       "acceptance": "Master obtains memory outputs through Profile; children do not access storage directly.",
       "blockers": [
-        "Apply hosted Supabase migration.",
         "Configure OpenAI model credentials and validate real outputs."
       ],
       "notes": [
@@ -1653,7 +1650,6 @@
       ],
       "acceptance": "Unconfirmed or conflicting contact details stay unresolved; protect personal data.",
       "blockers": [
-        "Apply hosted Supabase migration.",
         "Configure OpenAI model credentials and validate real outputs."
       ],
       "notes": [
@@ -1690,7 +1686,6 @@
       ],
       "acceptance": "Preserve exact approved names/dates and link each record to evidence.",
       "blockers": [
-        "Apply hosted Supabase migration.",
         "Configure OpenAI model credentials and validate real outputs."
       ],
       "notes": [
@@ -1727,7 +1722,6 @@
       ],
       "acceptance": "Preserve approved institutions, dates and qualifications; flag contradictions.",
       "blockers": [
-        "Apply hosted Supabase migration.",
         "Configure OpenAI model credentials and validate real outputs."
       ],
       "notes": [
@@ -1766,7 +1760,6 @@
       ],
       "acceptance": "Return approved facts only to Profile Agent, with evidence references and unresolved issues.",
       "blockers": [
-        "Apply hosted Supabase migration.",
         "Configure OpenAI model credentials and validate real outputs."
       ],
       "notes": [
@@ -1803,7 +1796,6 @@
       ],
       "acceptance": "Validate 10–15 distinct readable JDs and retain their source identities.",
       "blockers": [
-        "Apply hosted Supabase migration.",
         "Configure OpenAI model credentials and validate real outputs."
       ],
       "notes": [
@@ -1845,7 +1837,6 @@
       ],
       "acceptance": "Keep each extracted requirement linked to its originating JD; distinguish requirements from proven capability.",
       "blockers": [
-        "Apply hosted Supabase migration.",
         "Configure OpenAI model credentials and validate real outputs."
       ],
       "notes": [
@@ -1882,7 +1873,6 @@
       ],
       "acceptance": "Capture evidence and user confirmation; a selected JD is not proof that the user performed its tasks.",
       "blockers": [
-        "Apply hosted Supabase migration.",
         "Configure OpenAI model credentials and validate real outputs."
       ],
       "notes": [
@@ -1924,7 +1914,6 @@
       ],
       "acceptance": "Return approved profiles to Profile Agent with supported tasks, evidence, gaps and approval references.",
       "blockers": [
-        "Apply hosted Supabase migration.",
         "Configure OpenAI model credentials and validate real outputs."
       ],
       "notes": [
@@ -2215,11 +2204,12 @@
       ],
       "acceptance": "Facts and role profiles survive runs and deployments with controlled retrieval.",
       "blockers": [
-        "Apply hosted Supabase migration.",
         "Configure OpenAI model credentials and validate real outputs."
       ],
       "notes": [
-        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
+        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
+        "2026-10-29: User ran the initial SQL migration. Live synthetic checks passed private upload/download, public-access denial, direct-table/RPC restrictions and approval persistence. Stale writes surfaced a service failure; tested PT409 correction prepared for SQL Editor.",
+        "2026-10-29: Corrected migration 2026-10-29.2 verified live. All 12 synthetic checks passed: private storage, persisted approval, denied direct/public/anonymous access, owner isolation, immediate HTTP 409 conflicts and content cleanup. No personal resume or model calls used."
       ],
       "outputLinks": [
         {
@@ -2417,11 +2407,13 @@
       ],
       "acceptance": "Apply Supabase migration, configure runtime/model secrets and verify authenticated hosted profile persistence.",
       "blockers": [
-        "Supabase administrative connection or SQL Editor execution required.",
-        "OpenAI Developers API-key setup is not connected."
+        "Configure OpenAI API credentials for GPT-6.1 Sol and text-embedding-3-large.",
+        "Validate real model and authenticated browser workflows."
       ],
       "notes": [
-        "Added with the user-approved Profile workflow; source implementation and operational activation are tracked separately."
+        "Added with the user-approved Profile workflow; source implementation and operational activation are tracked separately.",
+        "2026-10-29: User ran the initial SQL migration. Live synthetic checks passed private upload/download, public-access denial, direct-table/RPC restrictions and approval persistence. Stale writes surfaced a service failure; tested PT409 correction prepared for SQL Editor.",
+        "2026-10-29: Corrected migration 2026-10-29.2 verified live. All 12 synthetic checks passed: private storage, persisted approval, denied direct/public/anonymous access, owner isolation, immediate HTTP 409 conflicts and content cleanup. No personal resume or model calls used."
       ],
       "outputLinks": [
         {
@@ -2469,7 +2461,9 @@
         "Hosted storage/deletion integration verification pending."
       ],
       "notes": [
-        "Added with the user-approved Profile workflow; source implementation and operational activation are tracked separately."
+        "Added with the user-approved Profile workflow; source implementation and operational activation are tracked separately.",
+        "2026-10-29: User ran the initial SQL migration. Live synthetic checks passed private upload/download, public-access denial, direct-table/RPC restrictions and approval persistence. Stale writes surfaced a service failure; tested PT409 correction prepared for SQL Editor.",
+        "2026-10-29: Corrected migration 2026-10-29.2 verified live. All 12 synthetic checks passed: private storage, persisted approval, denied direct/public/anonymous access, owner isolation, immediate HTTP 409 conflicts and content cleanup. No personal resume or model calls used."
       ],
       "outputLinks": [
         {
@@ -2607,6 +2601,16 @@
       "date": "2026-10-29",
       "title": "Profile implementation: local checks",
       "detail": "109 automated tests, including 31 Profile/PostgreSQL checks, plus TypeScript and production build passed. Seven SSR overview assertions passed; visual/interaction browser QA is unavailable. Live Pinecone synthetic transport passed; Supabase runtime credentials accepted. Hosted migration, OpenAI credentials and real-model evaluation remain pending."
+    },
+    {
+      "date": "2026-10-29",
+      "title": "Supabase activation: initial live checks",
+      "detail": "Migration 2026-10-29.1 installed. Private bucket limits, access denial, source upload/download and durable approval passed using synthetic content. Stale-write response failed as a service error; PT409 correction prepared and locally tested. Test content cleared; no personal documents or model calls used."
+    },
+    {
+      "date": "2026-10-29",
+      "title": "Supabase activation: corrected live verification",
+      "detail": "All 12 checks passed against migration 2026-10-29.2, including private upload/download, access denial, approval persistence, owner isolation, HTTP 409 stale writes and synthetic cleanup. Regression suite: 110 tests. OpenAI credentials and real-model/browser evaluation remain pending."
     }
   ]
 }

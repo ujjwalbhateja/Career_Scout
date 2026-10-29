@@ -38,7 +38,7 @@ create or replace function public.career_profile_health()
 returns jsonb language plpgsql security definer set search_path='' as $$
 begin
   perform public.career_profile_guard('schema-health');
-  return jsonb_build_object('schemaVersion',1,'migrationRevision','2026-10-29.1');
+  return jsonb_build_object('schemaVersion',1,'migrationRevision','2026-10-29.2');
 end;
 $$;
 create or replace function public.career_profile_save(p_owner text,p_revision bigint,p_state jsonb)
@@ -50,7 +50,7 @@ begin
     or octet_length(p_state::text)>12000000 then raise exception 'invalid profile state'; end if;
   insert into public.career_profile_states(owner_id,payload) values(p_owner,p_state) on conflict do nothing;
   select revision into actual from public.career_profile_states where owner_id=p_owner for update;
-  if p_revision is null or actual<>p_revision then raise exception 'profile_revision_conflict' using errcode='40001'; end if;
+  if p_revision is null or actual<>p_revision then raise exception 'profile_revision_conflict' using errcode='PT409'; end if;
   update public.career_profile_states set payload=p_state,revision=actual+1,updated_at=now() where owner_id=p_owner;
   return jsonb_build_object('revision',actual+1,'state',p_state);
 end;
@@ -75,7 +75,7 @@ begin
   perform public.career_profile_guard(p_owner);
   select revision,payload into actual,data from public.career_profile_states where owner_id=p_owner for update;
   if actual is null then return true; end if;
-  if actual<>p_revision then raise exception 'profile_revision_conflict' using errcode='40001'; end if;
+  if actual<>p_revision then raise exception 'profile_revision_conflict' using errcode='PT409'; end if;
   if data->'deletion'->>'status' is distinct from 'pending' then raise exception 'deletion not requested'; end if;
   -- Retain a content-free revision guard against stale in-flight saves.
   update public.career_profile_states set revision=actual+1,updated_at=now(),

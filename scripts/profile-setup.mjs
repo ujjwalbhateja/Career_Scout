@@ -22,7 +22,7 @@ try{
       report({supabaseKeyAccepted:true});
       const probe=await fetch(url.origin+'/rest/v1/rpc/career_profile_health',{method:'POST',headers:h,body:'{}',signal:AbortSignal.timeout(20000),redirect:'error'});
       const response=await probe.json().catch(()=>({}));
-      if(probe.ok)report({supabaseSchemaReachable:true,migrationRevision:response.migrationRevision,current:response.migrationRevision==='2026-10-29.1'});
+      if(probe.ok)report({supabaseSchemaReachable:true,migrationRevision:response.migrationRevision,current:response.migrationRevision==='2026-10-29.2'});
       else if(response.code==='PGRST202')report({supabaseSchemaReachable:false,migrationRequired:true});
       else throw new Error('Profile schema probe failed (HTTP '+probe.status+').');
     }

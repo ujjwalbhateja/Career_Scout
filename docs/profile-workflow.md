@@ -142,6 +142,10 @@ claimed.
 1. Save SUPABASE_URL and SUPABASE_SECRET_KEY in ignored .env.local.
 2. Apply supabase/migrations/202610280001_profile_memory.sql using SQL Editor
    or an administrative connection. A runtime secret cannot run arbitrary SQL.
+   Projects that ran revision 2026-10-29.1 should also run the small
+   202610290002_profile_conflict_response.sql correction. Revision 2026-10-29.2
+   uses PostgREST PT409 for expected stale-write conflicts rather than a
+   transaction-rollback/server-error response.
 3. Configure OpenAI API access through OpenAI Developers secure-key setup.
 4. Run node scripts/profile-setup.mjs pinecone-vectors.
 5. Run node scripts/profile-setup.mjs check.
