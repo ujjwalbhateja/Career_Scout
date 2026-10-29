@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import { ArrowDownToLine, ArrowRight, Bookmark, Check, ChevronDown, Compass, ExternalLink, FileText, Globe2, Link2, LoaderCircle, MapPin, RefreshCw, Search, Settings2, ShieldCheck, SlidersHorizontal, X } from 'lucide-react';
 import { suggestRoleKeywords } from '@/lib/matching.mjs';
 import { canonicalJobURL, dedupeEvidence } from '@/lib/job-evidence.mjs';
@@ -183,8 +182,8 @@ export default function Scout() {
 
   return <div className="app-shell">
     <header className="topbar">
-      <Link className="brand" href="/" aria-label="Career Scout home"><span className="brand-mark"><Compass size={23}/></span><span>career<span className="brand-light">scout</span></span></Link>
-      <nav aria-label="Main navigation">{[['search','Discover',0],['import','Import a role',imported.length],['saved','Shortlist',saved.length]].map(([key,title,count])=><button key={key} className={tab===key?'active':''} onClick={()=>setTab(String(key))}>{title}{Number(count)>0&&<span className="nav-count">{count}</span>}</button>)}<a className="progress-link" href="/profile">My profile</a><Link className="progress-link" href="/progress">Progress</Link></nav>
+      <a className="brand" href="/" aria-label="Career Scout home"><span className="brand-mark"><Compass size={23}/></span><span>career<span className="brand-light">scout</span></span></a>
+      <nav aria-label="Main navigation">{[['search','Discover',0],['import','Import a role',imported.length],['saved','Shortlist',saved.length]].map(([key,title,count])=><button key={key} className={tab===key?'active':''} onClick={()=>setTab(String(key))}>{title}{Number(count)>0&&<span className="nav-count">{count}</span>}</button>)}<a className="progress-link" href="/profile">My profile</a><a className="progress-link" href="/progress">Progress</a></nav>
       <button className="sources-button" onClick={()=>setSourceOpen(!sourceOpen)} aria-expanded={sourceOpen}><Settings2 size={17}/><span>Search coverage</span></button>
     </header>
     <main>

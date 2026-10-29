@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "revision": "2026-10-29.10",
+  "revision": "2026-10-29.11",
   "reviewedOn": "2026-10-29",
   "summary": "Resume-only role proposals and the approved Profile → Master → Keenable search handoff are implemented. JD-based building remains optional. Full authenticated user onboarding, representative quality, Matcher, Tailor and Critic remain separate pending work.",
   "framework": {
@@ -2528,7 +2528,8 @@
         "Added with the user-approved Profile workflow; source implementation and operational activation are tracked separately.",
         "2026-10-29 approval repair: reload the latest record before a decision; bind the reviewed fact version/fingerprint/prior approval; preserve server revision conflicts; verify saved status before success; ignore lower-revision reads; lock duplicate inputs; poll indexing/foreground state. Direct per-fact approval, explicit batch outcomes and saved decision history added. No existing user decisions were changed. Exact cause of the reported rejection is not established.",
         "2026-10-29: A native Chrome click on the correctly addressed Discover jobs link remained on Profile; navigation changed to native anchors. Exact cause of the former client-navigation failure is not established; full authenticated workflow/browser acceptance remains open.",
-        "2026-10-29: User reported main-page My profile did not return to Profile. Applied native navigation in both directions; bidirectional live verification follows publication. Full model/onboarding/mobile acceptance remains separate."
+        "2026-10-29: User reported main-page My profile did not return to Profile. Applied native navigation in both directions; bidirectional live verification follows publication. Full model/onboarding/mobile acceptance remains separate.",
+        "2026-10-29: Repeated reported navigation failures extended to Profile diagram. Remaining framework page links were replaced consistently across all five page components; authenticated live page and diagram-layer verification follows deployment. Full model/onboarding/mobile acceptance remains separate."
       ],
       "outputLinks": [
         {
@@ -2668,7 +2669,8 @@
       "acceptance": "Show coordination, analysis, storage and semantic-search layers with reviewed tasks, evidence, blockers and explicit configuration-only indicators.",
       "blockers": [],
       "notes": [
-        "Added for the user-requested Gemini pivot; adapter code completion is separate from provider activation and broad quality evaluation."
+        "Added for the user-requested Gemini pivot; adapter code completion is separate from provider activation and broad quality evaluation.",
+        "2026-10-29: Repaired Profile diagram entry/return links and converted remaining cross-page navigation on Scout, Profile, diagram, progress and workflow pages to native anchors. Diagram layer controls, polling and reviewed-record mapping remain unchanged."
       ],
       "outputLinks": [
         {
