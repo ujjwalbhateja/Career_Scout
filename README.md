@@ -1,6 +1,6 @@
 ﻿# Career Scout
 
-Private Keenable job discovery plus a source-linked Profile intake/review implementation using Supabase records and Pinecone vectors. Hosted schema/model activation remains a separate gate.
+Private Keenable job discovery plus a source-linked Profile intake/review implementation using Supabase records and Pinecone vectors. Supabase is verified; Gemini activation and full workflow validation remain separate gates.
 
 ## Run locally
 
@@ -31,7 +31,7 @@ Web discovery is bounded and cannot enumerate every vacancy. Curated expansions 
 
 ## Project progress tracker
 
-Open **Progress** in Scout or visit `/progress`. The multi-agent board shows 72 tracking points grouped by ten owners, including all 36 original points with preserved progress and ownership history. Statuses are Not Started, In Progress, Blocked, In Review and Complete. Search, owner/status/original-point filters, dependency navigation, acceptance criteria, blockers, notes, output links and dated validation history support development of each agent. Counts represent tracking points, not estimated effort or a percentage of agent readiness.
+Open **Progress** in Scout or visit `/progress`. The multi-agent board shows 84 tracking points grouped by ten owners, including all 36 original points with preserved progress and ownership history. Statuses are Not Started, In Progress, Blocked, In Review and Complete. Search, owner/status/original-point filters, dependency navigation, acceptance criteria, blockers, notes, output links and dated validation history support development of each agent. Counts represent tracking points, not estimated effort or a percentage of agent readiness.
 
 The page checks `/api/progress` every 30 seconds while visible, resumes on focus, supports manual sync and preserves the last loaded record if a request fails. Polling makes no paid provider calls. Keenable configuration presence is shown separately from authentication or available credits. Feature statuses are reviewed in `data/scout-progress.json` and published with implementation changes; they are not inferred from code, Git or connection health. The reviewed record persists in the repository and is shared across devices through the private site. Export downloads that authoritative record; there are no browser-local status overrides.
 

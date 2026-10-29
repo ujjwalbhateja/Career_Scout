@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {zipSync,strToU8} from 'fflate/browser';
 import {emptyProfile,addDocument,proposeFacts,decideFacts,correctFact,resolveConflict,addAnswer,addJDAnalysis,buildProfiles,approveRole,finalize,savedPacket,chunks,hybridResults,removeDocument} from '../lib/profile/domain.mjs';
 import {extractDocument} from '../lib/profile/extraction.mjs';
-import {ProfileMemory,embedTexts,providerStatus} from '../lib/profile/providers.mjs';
+import {ProfileMemory,embedTexts,providerStatus,analyzeWithModel} from '../lib/profile/providers.mjs';
 import {createProfileGraph,createCareerWorkflow} from '../lib/workflow/graph.mjs';
 import {ProfileService} from '../lib/profile/service.mjs';
 const source='At Example Employer, supported 50 institutional clients. Python is listed as a skill.';
@@ -114,10 +114,109 @@ test('retrieval degrades to database evidence when semantic provider fails',asyn
 test('embedding configuration requires model credentials as well as Pinecone credentials',()=>{
   assert.equal(providerStatus({PINECONE_API_KEY:'not-real',PINECONE_INDEX_HOST:'https://index.pinecone.io'}).pinecone,false);
 });
+
+test('Gemini quota failures preserve state and never retry or fall back to OpenAI',async t=>{
+  for(const [headers,details,expected] of [
+    [{'Retry-After':'42'},[],/Wait at least 42 seconds/],
+    [{},[{'@type':'type.googleapis.com/google.rpc.RetryInfo',retryDelay:'12.5s'}],/Wait at least 13 seconds/],
+    [{},[],/daily quota may require waiting/]
+  ])await t.test(String(expected),async t=>{
+    let calls=0;
+    t.mock.method(globalThis,'fetch',async url=>{assert.equal(new URL(url).hostname,'generativelanguage.googleapis.com');calls++;return Response.json({error:{status:'RESOURCE_EXHAUSTED',details,message:'private source text and fixture-secret'}},{status:429,headers});});
+    const env={GEMINI_API_KEY:'fixture-key',OPENAI_API_KEY:'old-key'};
+    for(const operation of [()=>analyzeWithModel(env,'facts',{}),()=>embedTexts(env,['Synthetic evidence.'])]){
+      await assert.rejects(operation(),error=>{assert.equal(error.status,429);assert.match(error.message,expected);assert.match(error.message,/saved documents and approvals are unchanged/);assert.doesNotMatch(error.message,/private source|fixture-secret/);return true;});
+    }
+    assert.equal(calls,2);
+  });
+});
+
+test('Gemini authentication/access and malformed errors never reflect provider text',async t=>{
+  for(const [status,body,expected] of [[401,{error:{message:'fixture-secret'}},/credentials were rejected/],[400,{error:{details:[{reason:'API_KEY_INVALID'}]}},/credentials were rejected/],[403,{},/access was denied/],[404,{},/model is unavailable/],[429,null,/quota or rate limit/]])await t.test(String(status),async t=>{
+    t.mock.method(globalThis,'fetch',async()=>Response.json(body,{status}));
+    await assert.rejects(analyzeWithModel({GEMINI_API_KEY:'fixture-key'},'facts',{}),error=>{assert.match(error.message,expected);assert.doesNotMatch(error.message,/fixture-secret/);return true;});
+  });
+});
+
+test('quota failure preserves approved state and records a recoverable failed analysis run',async t=>{
+  let stored={revision:2,state:await approvedState()},calls=0;
+  const before=structuredClone(stored.state),service=new ProfileService({GEMINI_API_KEY:'fixture-key'},'owner');
+  service.memory.load=async()=>structuredClone(stored);
+  service.memory.reserve=async()=>{};
+  service.memory.save=async(revision,state)=>{assert.equal(revision,stored.revision);stored={revision:revision+1,state:structuredClone(state)};return structuredClone(stored);};
+  t.mock.method(globalThis,'fetch',async()=>{calls++;return Response.json({error:{status:'RESOURCE_EXHAUSTED'}},{status:429});});
+  await assert.rejects(service.action({action:'analyze',revision:2,id:'resume'}),/quota or rate limit/);
+  for(const key of ['documents','facts','approvals','snapshots'])assert.deepEqual(stored.state[key],before[key]);
+  assert.equal(stored.state.runs.at(-1).status,'failed');assert.match(stored.state.runs.at(-1).message,/quota or rate limit/);assert.equal(calls,1);
+});
 test('embedding adapter pins the requested model and rejects wrong dimensions',async t=>{
-  const requests=[];t.mock.method(globalThis,'fetch',async(url,options)=>{requests.push(JSON.parse(options.body));return Response.json({data:[{index:0,embedding:Array(3072).fill(.1)}]});});
-  assert.equal((await embedTexts({OPENAI_API_KEY:'fixture-key'},['portfolio reports']))[0].length,3072);assert.equal(requests[0].model,'text-embedding-3-large');
-  assert.equal(requests[0].dimensions,3072);
+  const requests=[];t.mock.method(globalThis,'fetch',async(url,options)=>{assert.equal(options.headers['x-goog-api-key'],'fixture-key');assert.equal(new URL(url).search,'');requests.push(JSON.parse(options.body));return Response.json({embeddings:[{values:Array(requests.length===1?3072:768).fill(.1)}]});});
+  assert.equal((await embedTexts({GEMINI_API_KEY:'fixture-key'},['portfolio reports']))[0].length,3072);assert.equal(requests[0].requests[0].model,'models/gemini-embedding-001');
+  assert.equal(requests[0].requests[0].outputDimensionality,3072);assert.equal(requests[0].requests[0].taskType,'RETRIEVAL_DOCUMENT');
+  await assert.rejects(embedTexts({GEMINI_API_KEY:'fixture-key'},['query'],undefined,'RETRIEVAL_QUERY'),/incompatible dimensions/);
+  assert.equal(requests[1].requests[0].taskType,'RETRIEVAL_QUERY');
+});
+
+test('old OpenAI credentials and endpoint settings cannot enable Profile or send any requests',async t=>{
+  let calls=0;t.mock.method(globalThis,'fetch',async()=>{calls++;throw new Error('must not call');});
+  const env={OPENAI_API_KEY:'old-key',PROFILE_MODEL_API_KEY:'old-model-key',PROFILE_EMBEDDING_API_KEY:'old-embedding-key',PROFILE_MODEL_URL:'https://api.openai.com/v1/chat/completions'};
+  assert.equal(providerStatus(env).model,false);assert.equal(providerStatus(env).pinecone,false);
+  await assert.rejects(analyzeWithModel(env,'facts',{}),/not configured/);await assert.rejects(embedTexts(env,['synthetic']),/GEMINI_API_KEY/);assert.equal(calls,0);
+});
+
+test('paused semantic search performs keyword retrieval without any provider calls',async t=>{
+  let calls=0;t.mock.method(globalThis,'fetch',async()=>{calls++;throw new Error('must not call');});
+  const env={GEMINI_API_KEY:'key',PINECONE_API_KEY:'key',PINECONE_INDEX_HOST:'https://fixture.pinecone.io',PROFILE_SEMANTIC_SEARCH:'disabled'};
+  const memory=new ProfileMemory(env,'owner'),result=await memory.retrieve(await approvedState(),'institutional');
+  assert.equal(providerStatus(env).model,true);assert.equal(providerStatus(env).pinecone,false);assert.equal(result.mode,'database');assert.equal(result.results.length,1);
+  await assert.rejects(embedTexts(env,['synthetic']),/paused/);assert.equal(calls,0);
+});
+
+test('Gemini analysis uses constrained JSON and refuses truncated, blocked or malformed output',async t=>{
+  const env={GEMINI_API_KEY:'fixture-key',OPENAI_API_KEY:'must-not-use',PROFILE_MODEL_URL:'https://unexpected.invalid'};
+  const cases=[
+    [{candidates:[{finishReason:'STOP',content:{parts:[{thought:true,text:'hidden reasoning'},{text:'{"facts":[]}' }]}}]},null],
+    [{candidates:[{finishReason:'MAX_TOKENS'}]},/truncated/],
+    [{promptFeedback:{blockReason:'SAFETY'}},/did not complete/],
+    [{candidates:[{finishReason:'STOP',content:{parts:[{text:'bad-json'}]}}]},/invalid JSON/],
+    [{candidates:[{finishReason:'STOP',content:{parts:[{text:'{}'}]}}]},/omitted required/],
+    [{candidates:[{finishReason:'STOP',content:{parts:[{functionCall:{name:'approve'}}]}}]},/unsupported response/]
+  ];
+  for(const [response,expected] of cases)await t.test(String(expected),async t=>{
+    t.mock.method(globalThis,'fetch',async(url,options)=>{
+      assert.equal(url,'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent');assert.equal(options.headers['x-goog-api-key'],'fixture-key');
+      const body=JSON.parse(options.body);assert.equal(body.generationConfig.responseMimeType,'application/json');assert.ok(body.generationConfig.responseSchema.properties.facts);assert.equal(body.tools,undefined);
+      return Response.json(response);
+    });
+    if(expected)await assert.rejects(analyzeWithModel(env,'facts',{}),expected);else assert.deepEqual(await analyzeWithModel(env,'facts',{}),{facts:[]});
+  });
+});
+
+test('Gemini sync isolates old vectors and does not re-embed unchanged approved records',async t=>{
+  let calls=0;t.mock.method(globalThis,'fetch',async()=>{calls++;return Response.json({embeddings:[{values:Array(3072).fill(.1)}]});});
+  const s=await approvedState(),memory=new ProfileMemory({GEMINI_API_KEY:'key',PINECONE_INDEX_HOST:'https://fixture.pinecone.io'},'owner'),writes=[];
+  s.indexed={config:'old-openai-config',model:'text-embedding-3-large',recordHashes:{'old-record':'old-hash'}};
+  memory.pinecone=async(path,body)=>{writes.push({path,body});return {};};
+  await memory.sync(s);await memory.sync(s);
+  assert.equal(calls,1);assert.equal(writes.length,1);assert.equal(writes[0].path,'/vectors/upsert');assert.equal(writes[0].body.namespace,await memory.vectorNamespace());assert.notEqual(await memory.namespace(),await memory.vectorNamespace());
+  assert.equal(s.indexed.model,'gemini-embedding-001');assert.equal(writes[0].body.vectors[0].metadata.embedding_model,'gemini-embedding-001');
+  const oldNamespace=await memory.namespace();assert.ok(s.indexLocations.some(location=>location.namespace===oldNamespace));
+});
+
+test('Gemini quota during semantic retrieval falls back to approved database evidence',async t=>{
+  t.mock.method(globalThis,'fetch',async()=>Response.json({error:{status:'RESOURCE_EXHAUSTED'}},{status:429}));
+  const memory=new ProfileMemory({GEMINI_API_KEY:'key',PINECONE_API_KEY:'key',PINECONE_INDEX_HOST:'https://fixture.pinecone.io'},'owner');memory.reserve=async()=>{};
+  const result=await memory.retrieve(await approvedState(),'institutional');assert.equal(result.mode,'database');assert.equal(result.results.length,1);assert.match(result.warning,/quota or rate limit/);
+});
+
+test('profile deletion includes both embedding namespaces on the same host and rejects another owner',async()=>{
+  const memory=new ProfileMemory({PINECONE_API_KEY:'key',PINECONE_INDEX_HOST:'https://fixture.pinecone.io'},'owner'),deleted=[];
+  const s=emptyProfile(),host=memory.env.PINECONE_INDEX_HOST;
+  s.indexLocations=[{host,namespace:await memory.namespace()},{host,namespace:await memory.vectorNamespace()}];
+  memory.pinecone=async(path,body)=>{deleted.push(body.namespace);return {};};memory.removeFiles=async()=>{};memory.rpc=async()=>{};
+  await memory.purge(s,1);assert.deepEqual(new Set(deleted),new Set([await memory.namespace(),await memory.vectorNamespace()]));
+  deleted.length=0;s.indexLocations.push({host,namespace:'user-another-owner'});
+  await assert.rejects(memory.purge(s,1),/ownership mismatch/);assert.equal(deleted.length,0);
 });
 test('service keeps optimistic revisions and rejects client attempts to reuse stale approvals',async()=>{
   const s=await approvedState(),service=new ProfileService({},'owner');service.memory.load=async()=>({revision:8,state:structuredClone(s)});

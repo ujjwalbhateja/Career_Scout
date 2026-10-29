@@ -71,7 +71,7 @@ export default defineConfig(async ({ command, mode }) => {
           ...localBindingConfig,
           ...(command === "serve" ? { vars: Object.fromEntries(
             Object.entries(loadEnv(mode, process.cwd(), "")).filter(([key]) =>
-              ['KEENABLE_API_KEY','SUPABASE_URL','SUPABASE_SECRET_KEY','SUPABASE_SERVICE_ROLE_KEY','PINECONE_API_KEY','PINECONE_INDEX_HOST','PINECONE_INDEX_NAME','OPENAI_API_KEY','PROFILE_MODEL_API_KEY','PROFILE_MODEL_NAME','PROFILE_MODEL_URL','PROFILE_EMBEDDING_API_KEY'].includes(key))
+              ['KEENABLE_API_KEY','SUPABASE_URL','SUPABASE_SECRET_KEY','SUPABASE_SERVICE_ROLE_KEY','PINECONE_API_KEY','PINECONE_INDEX_HOST','PINECONE_INDEX_NAME','GEMINI_API_KEY','PROFILE_SEMANTIC_SEARCH'].includes(key))
           ) } : {}),
           ...(command === "serve"
             ? {

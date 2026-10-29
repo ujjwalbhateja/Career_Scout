@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
-  "revision": "2026-10-29.3",
+  "revision": "2026-10-29.5",
   "reviewedOn": "2026-10-29",
-  "summary": "Supabase persistence is verified. A hosted Workers fetch incompatibility was reproduced and corrected with actual-runtime regression tests; OpenAI model access remains pending.",
+  "summary": "Profile is moving to Gemini analysis and embeddings. Local synthetic extraction and 3072-dimension retrieval checks passed. Supabase and Pinecone are retained; hosted Gemini activation and full workflow evaluation remain separate gates. The Profile diagram shares this reviewed record.",
   "framework": {
     "name": "LangGraph",
     "version": "1.5.2",
-    "mode": "Executable workflow and Profile intake implementation; provider activation pending",
-    "note": "Supabase records and private storage are connected. Provider requests now use Workers-compatible redirect handling with real-runtime coverage. Profile AI analysis and embeddings await OpenAI credentials.",
+    "mode": "Executable Profile implementation; Gemini activation and end-to-end validation tracked separately",
+    "note": "Supabase persistence and Pinecone raw-vector transport were verified. Gemini replaces both OpenAI calls with no OpenAI fallback. Initial local synthetic extraction/embedding checks passed; full hosted/user workflow validation is pending.",
     "documentation": "https://docs.langchain.com/oss/javascript/langgraph/thinking-in-langgraph"
   },
   "agents": [
@@ -25,7 +25,7 @@
       "kind": "coordinator",
       "parent": "master",
       "description": "Coordinates Fact Agent and Profile Builder and consolidates approved profile outputs.",
-      "next": "Activate Supabase schema and model credentials; verify the Profile workspace end to end.",
+      "next": "Configure hosted Gemini and verify the complete Profile workflow, preserving individual approvals.",
       "outputs": "Verified facts and approved role profiles, returned only to Master."
     },
     {
@@ -34,7 +34,7 @@
       "kind": "subagent",
       "parent": "profile",
       "description": "Maintains verified personal, contact, employment, education, degree and skills facts.",
-      "next": "Validate GPT extraction against representative source documents after model activation.",
+      "next": "Evaluate Gemini extraction against representative source documents and finish individual factual review.",
       "outputs": "Versioned, approved factual profile returned only to Profile Agent."
     },
     {
@@ -87,8 +87,8 @@
       "title": "Permanent Memory",
       "kind": "storage",
       "parent": "profile",
-      "description": "Supabase owns records and private files; Pinecone indexes approved evidence with OpenAI embeddings.",
-      "next": "Apply tested Supabase migration, provision model access and validate hosted persistence.",
+      "description": "Supabase owns records and private files; Pinecone indexes approved evidence with Gemini embeddings.",
+      "next": "Keep Supabase and Pinecone; validate Gemini indexing/retrieval in a separate per-owner namespace.",
       "outputs": "Versioned facts, approved role profiles and authorized retrieval through Profile."
     },
     {
@@ -963,7 +963,7 @@
         }
       ],
       "blockers": [
-        "Configure OpenAI model credentials and validate real outputs."
+        "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
         "Preserved original tracker point. Ownership may change; progress and ownership history remain available.",
@@ -1021,7 +1021,7 @@
         }
       ],
       "blockers": [
-        "Configure OpenAI model credentials and validate real outputs."
+        "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
         "Preserved original tracker point. Ownership may change; progress and ownership history remain available.",
@@ -1077,7 +1077,7 @@
         }
       ],
       "blockers": [
-        "Configure OpenAI model credentials and validate real outputs."
+        "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
         "Preserved original tracker point. Ownership may change; progress and ownership history remain available.",
@@ -1576,7 +1576,7 @@
       ],
       "acceptance": "Return versioned outputs and unresolved questions through Master; never infer capability from JDs alone.",
       "blockers": [
-        "Configure OpenAI model credentials and validate real outputs."
+        "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
         "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
@@ -1613,7 +1613,7 @@
       ],
       "acceptance": "Master obtains memory outputs through Profile; children do not access storage directly.",
       "blockers": [
-        "Configure OpenAI model credentials and validate real outputs."
+        "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
         "Detailed permanent storage and retrieval design is explicitly deferred.",
@@ -1650,7 +1650,7 @@
       ],
       "acceptance": "Unconfirmed or conflicting contact details stay unresolved; protect personal data.",
       "blockers": [
-        "Configure OpenAI model credentials and validate real outputs."
+        "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
         "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
@@ -1686,7 +1686,7 @@
       ],
       "acceptance": "Preserve exact approved names/dates and link each record to evidence.",
       "blockers": [
-        "Configure OpenAI model credentials and validate real outputs."
+        "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
         "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
@@ -1722,7 +1722,7 @@
       ],
       "acceptance": "Preserve approved institutions, dates and qualifications; flag contradictions.",
       "blockers": [
-        "Configure OpenAI model credentials and validate real outputs."
+        "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
         "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
@@ -1760,7 +1760,7 @@
       ],
       "acceptance": "Return approved facts only to Profile Agent, with evidence references and unresolved issues.",
       "blockers": [
-        "Configure OpenAI model credentials and validate real outputs."
+        "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
         "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
@@ -1796,7 +1796,7 @@
       ],
       "acceptance": "Validate 10–15 distinct readable JDs and retain their source identities.",
       "blockers": [
-        "Configure OpenAI model credentials and validate real outputs."
+        "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
         "A tested intake boundary exists in the workflow foundation; a real intake UI and persistence are not yet built.",
@@ -1837,7 +1837,7 @@
       ],
       "acceptance": "Keep each extracted requirement linked to its originating JD; distinguish requirements from proven capability.",
       "blockers": [
-        "Configure OpenAI model credentials and validate real outputs."
+        "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
         "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
@@ -1873,7 +1873,7 @@
       ],
       "acceptance": "Capture evidence and user confirmation; a selected JD is not proof that the user performed its tasks.",
       "blockers": [
-        "Configure OpenAI model credentials and validate real outputs."
+        "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
         "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
@@ -1914,7 +1914,7 @@
       ],
       "acceptance": "Return approved profiles to Profile Agent with supported tasks, evidence, gaps and approval references.",
       "blockers": [
-        "Configure OpenAI model credentials and validate real outputs."
+        "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
         "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
@@ -2204,7 +2204,7 @@
       ],
       "acceptance": "Facts and role profiles survive runs and deployments with controlled retrieval.",
       "blockers": [
-        "Configure OpenAI model credentials and validate real outputs."
+        "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
         "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
@@ -2408,14 +2408,17 @@
       ],
       "acceptance": "Apply Supabase migration, configure runtime/model secrets and verify authenticated hosted profile persistence.",
       "blockers": [
-        "Configure OpenAI API credentials for GPT-6.1 Sol and text-embedding-3-large.",
-        "Validate real model and authenticated browser workflows."
+        "Deploy environment revision 3 with the saved Gemini server secret and verify hosted execution.",
+        "Complete authenticated hosted Profile workflow validation."
       ],
       "notes": [
         "Added with the user-approved Profile workflow; source implementation and operational activation are tracked separately.",
         "2026-10-29: User ran the initial SQL migration. Live synthetic checks passed private upload/download, public-access denial, direct-table/RPC restrictions and approval persistence. Stale writes surfaced a service failure; tested PT409 correction prepared for SQL Editor.",
         "2026-10-29: Corrected migration 2026-10-29.2 verified live. All 12 synthetic checks passed: private storage, persisted approval, denied direct/public/anonymous access, owner isolation, immediate HTTP 409 conflicts and content cleanup. No personal resume or model calls used.",
-        "2026-10-29: User-reported hosted GET /api/profile failure reproduced under workerd before any upstream call. Replaced unsupported fetch redirect:error with manual redirect handling and explicit redirect rejection; actual-runtime tests cover provider transport and redirect credential protection. Added metadata-only hosted connection probe."
+        "2026-10-29: User-reported hosted GET /api/profile failure reproduced under workerd before any upstream call. Replaced unsupported fetch redirect:error with manual redirect handling and explicit redirect rejection; actual-runtime tests cover provider transport and redirect credential protection. Added metadata-only hosted connection probe.",
+        "2026-10-29: Dedicated Career Scout key saved only in ignored local environment; metadata requests for both selected models returned 200. A minimal synthetic inference request returned HTTP 429 with type insufficient_quota. No resume data was sent by this diagnostic. Fixed local error handling to distinguish credits, spend/usage limits, generic quota and transient throttling without reflecting provider messages or automatically retrying billing errors. Hosted release is unchanged.",
+        "2026-10-29: User selected Gemini analysis and embeddings. Local key saved without exposing it. Live synthetic check passed three Gemini requests: source-linked extraction and document/query embeddings at 3072 dimensions. OpenAI calls: zero. Hosted activation is tracked separately.",
+        "2026-10-29: Gemini key configured as a hosted secret in environment revision 3; application deployment must apply it. Existing Supabase/Pinecone/Keenable secrets were preserved."
       ],
       "outputLinks": [
         {
@@ -2427,24 +2430,37 @@
     {
       "id": "profile-embedding-evaluation",
       "owner": "profile-builder",
-      "title": "Evaluate GPT extraction and semantic retrieval",
+      "title": "Evaluate profile extraction and semantic retrieval",
       "stage": "profile",
-      "status": "blocked",
-      "detail": "Evaluate GPT-6.1 Sol and text-embedding-3-large against representative evidence, paraphrases, exact skills and unsupported claims.",
+      "status": "in_progress",
+      "detail": "Evaluate the selected Gemini analysis and embedding models against representative evidence, paraphrases, exact skills and unsupported claims.",
       "dependsOn": [
         "profile-provider-activation"
       ],
-      "acceptance": "Evaluate GPT-6.1 Sol and text-embedding-3-large against representative evidence, paraphrases, exact skills and unsupported claims.",
+      "acceptance": "Validate source-grounded extraction, requirement coverage, unsupported-claim handling and semantic/keyword retrieval using the selected Gemini models; configuration and a small smoke check alone do not establish quality.",
       "blockers": [
-        "Model API credentials and hosted schema are required."
+        "Complete representative model-quality and authenticated hosted workflow evaluation; bounded synthetic checks do not establish full real-profile readiness."
       ],
       "notes": [
-        "Added with the user-approved Profile workflow; source implementation and operational activation are tracked separately."
+        "Added with the user-approved Profile workflow; source implementation and operational activation are tracked separately.",
+        "Previous model-specific acceptance concerned GPT-6.1 Sol and text-embedding-3-large. The user explicitly selected Gemini for both services on 2026-10-29; historical evidence is retained."
       ],
       "outputLinks": [
         {
           "label": "Profile workspace",
           "url": "/profile"
+        }
+      ],
+      "statusHistory": [
+        {
+          "status": "blocked",
+          "date": "2026-10-29",
+          "reason": "Previous reviewed release."
+        },
+        {
+          "status": "in_progress",
+          "date": "2026-10-29",
+          "reason": "Gemini local synthetic extraction and embedding checks passed; representative hosted evaluation remains."
         }
       ]
     },
@@ -2480,14 +2496,14 @@
       "owner": "profile",
       "title": "Profile browser and interaction review",
       "stage": "profile",
-      "status": "blocked",
+      "status": "in_progress",
       "detail": "Review responsive intake, fact approval, role review, accessibility and error/recovery flows in a real browser.",
       "dependsOn": [
         "profile-document-parsers"
       ],
       "acceptance": "Review responsive intake, fact approval, role review, accessibility and error/recovery flows in a real browser.",
       "blockers": [
-        "No enabled browser surface is available."
+        "Complete desktop/mobile interaction review, including the new structural diagram and end-to-end authenticated Profile flows. Browser extension access is unavailable; native desktop access is partial."
       ],
       "notes": [
         "Added with the user-approved Profile workflow; source implementation and operational activation are tracked separately."
@@ -2497,7 +2513,160 @@
           "label": "Profile workspace",
           "url": "/profile"
         }
+      ],
+      "statusHistory": [
+        {
+          "status": "blocked",
+          "date": "2026-10-29",
+          "reason": "Previous reviewed release."
+        },
+        {
+          "status": "in_progress",
+          "date": "2026-10-29",
+          "reason": "Desktop Chrome is available; full Profile browser and accessibility review remains pending."
+        }
       ]
+    },
+    {
+      "id": "profile-gemini-analysis",
+      "owner": "profile",
+      "title": "Gemini analysis adapter",
+      "stage": "profile",
+      "status": "complete",
+      "detail": "Extract facts, JD requirements, role profiles and assessments using constrained Gemini JSON without OpenAI calls.",
+      "dependsOn": [
+        "profile-document-parsers"
+      ],
+      "acceptance": "Extract facts, JD requirements, role profiles and assessments using constrained Gemini JSON without OpenAI calls.",
+      "blockers": [],
+      "notes": [
+        "Added for the user-requested Gemini pivot; adapter code completion is separate from provider activation and broad quality evaluation."
+      ],
+      "outputLinks": [
+        {
+          "label": "Profile structure and progress",
+          "url": "/profile/architecture"
+        }
+      ],
+      "statusHistory": [
+        {
+          "status": "in_progress",
+          "date": "2026-10-29",
+          "reason": "Previous reviewed release."
+        },
+        {
+          "status": "complete",
+          "date": "2026-10-29",
+          "reason": "Implementation and required local validation passed; hosted and real workflow gates remain separate."
+        }
+      ],
+      "evidence": "Gemini request/response, malformed/truncated/refused output, quota preservation and actual Workers transport tests; local live synthetic facts passed."
+    },
+    {
+      "id": "profile-gemini-embeddings",
+      "owner": "memory",
+      "title": "Gemini embeddings and vector isolation",
+      "stage": "profile",
+      "status": "complete",
+      "detail": "Generate document/query embeddings at 3072 dimensions; isolate legacy vectors, retain approvals and include all owned namespaces during deletion.",
+      "dependsOn": [
+        "memory-design",
+        "profile-vector-transport"
+      ],
+      "acceptance": "Generate document/query embeddings at 3072 dimensions; isolate legacy vectors, retain approvals and include all owned namespaces during deletion.",
+      "blockers": [],
+      "notes": [
+        "Added for the user-requested Gemini pivot; adapter code completion is separate from provider activation and broad quality evaluation."
+      ],
+      "outputLinks": [
+        {
+          "label": "Profile structure and progress",
+          "url": "/profile/architecture"
+        }
+      ],
+      "statusHistory": [
+        {
+          "status": "in_progress",
+          "date": "2026-10-29",
+          "reason": "Previous reviewed release."
+        },
+        {
+          "status": "complete",
+          "date": "2026-10-29",
+          "reason": "Implementation and required local validation passed; hosted and real workflow gates remain separate."
+        }
+      ],
+      "evidence": "Document/query task types, dimensions, unchanged-record reuse, namespace migration and same-host dual-namespace purge tests; local live synthetic embeddings passed."
+    },
+    {
+      "id": "profile-keyword-fallback",
+      "owner": "memory",
+      "title": "Keyword retrieval without model access",
+      "stage": "profile",
+      "status": "complete",
+      "detail": "Keep current approved database evidence searchable when Gemini is absent, paused or quota-limited; never call a paid fallback.",
+      "dependsOn": [
+        "memory-design"
+      ],
+      "acceptance": "Keep current approved database evidence searchable when Gemini is absent, paused or quota-limited; never call a paid fallback.",
+      "blockers": [],
+      "notes": [
+        "Added for the user-requested Gemini pivot; adapter code completion is separate from provider activation and broad quality evaluation."
+      ],
+      "outputLinks": [
+        {
+          "label": "Profile structure and progress",
+          "url": "/profile/architecture"
+        }
+      ],
+      "statusHistory": [
+        {
+          "status": "in_progress",
+          "date": "2026-10-29",
+          "reason": "Previous reviewed release."
+        },
+        {
+          "status": "complete",
+          "date": "2026-10-29",
+          "reason": "Implementation and required local validation passed; hosted and real workflow gates remain separate."
+        }
+      ],
+      "evidence": "No-request pause/missing-key checks, Gemini-quota fallback and current-approved-record rehydration tests."
+    },
+    {
+      "id": "profile-architecture-board",
+      "owner": "profile",
+      "title": "Profile structural diagram and status view",
+      "stage": "profile",
+      "status": "complete",
+      "detail": "Show coordination, analysis, storage and semantic-search layers with reviewed tasks, evidence, blockers and explicit configuration-only indicators.",
+      "dependsOn": [
+        "profile-subgraph"
+      ],
+      "acceptance": "Show coordination, analysis, storage and semantic-search layers with reviewed tasks, evidence, blockers and explicit configuration-only indicators.",
+      "blockers": [],
+      "notes": [
+        "Added for the user-requested Gemini pivot; adapter code completion is separate from provider activation and broad quality evaluation."
+      ],
+      "outputLinks": [
+        {
+          "label": "Profile structure and progress",
+          "url": "/profile/architecture"
+        }
+      ],
+      "statusHistory": [
+        {
+          "status": "in_progress",
+          "date": "2026-10-29",
+          "reason": "Previous reviewed release."
+        },
+        {
+          "status": "complete",
+          "date": "2026-10-29",
+          "reason": "Implementation and required local validation passed; hosted and real workflow gates remain separate."
+        }
+      ],
+      "evidence": "Diagram model reference/coverage tests, TypeScript and eight React SSR/component interaction checks. Browser layout and full Profile flows remain separately tracked."
     }
   ],
   "communication": [
@@ -2619,6 +2788,26 @@
       "date": "2026-10-29",
       "title": "Profile provider transport: Workers regression",
       "detail": "Two actual workerd tests pass for profile RPC, health, private download, Pinecone, embedding and model transport using fixtures. Unsupported redirect mode reproduced the original error before networking; manual redirects resolve it while rejecting cross-host redirects. These tests do not establish real model quality."
+    },
+    {
+      "date": "2026-10-29",
+      "title": "Local OpenAI quota diagnosis and error recovery",
+      "detail": "Minimal synthetic inference returned HTTP 429 with type insufficient_quota; model metadata success does not establish paid inference access. Local fixed messages distinguish credits, spend/usage quota, transient throttling, authentication and model access. All 130 tests passed, including actual Workers regression cases and preservation of documents/facts/approvals after failed analysis; TypeScript and production build passed. Hosted release and task status counts unchanged; real extraction/embedding quality still unverified."
+    },
+    {
+      "date": "2026-10-29",
+      "title": "Gemini: initial live synthetic check",
+      "detail": "Three local Gemini requests succeeded: source-linked extraction produced four pending synthetic facts; document/query embeddings had 3072 dimensions; reporting-related passages ranked above unrelated equipment text. No stored profile read, personal upload, real approval or OpenAI call. This is a smoke check, not representative full workflow evaluation."
+    },
+    {
+      "date": "2026-10-29",
+      "title": "Gemini: synthetic JD, Builder and Pinecone flow",
+      "detail": "Six Gemini requests passed extraction, one live JD extraction, role proposals and assessment; the JD result was copied onto ten distinct synthetic fixture IDs to exercise onboarding without ten extra calls. Unsupported SQL stayed unmapped, roles stayed proposed, and three synthetic Gemini vectors were searched in an isolated Pinecone namespace. Cleanup requested. No real profile read or real approvals."
+    },
+    {
+      "date": "2026-10-29",
+      "title": "Profile diagram: local component verification",
+      "detail": "140 automated tests and TypeScript passed. Eight React SSR/component checks passed for nine layers, task selection, configuration presence, polling, offline preservation, recovery, visibility and cancellation. Native Chrome was in active user use and browser-extension access unavailable; visual/mobile/full authenticated browser QA remains pending."
     }
   ]
 }

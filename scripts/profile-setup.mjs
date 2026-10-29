@@ -12,7 +12,7 @@ async function request(url,options={}){
 }
 try{
   if(command==='check'){
-    const present=Object.fromEntries(['SUPABASE_URL','SUPABASE_SECRET_KEY','SUPABASE_SERVICE_ROLE_KEY','SUPABASE_ACCESS_TOKEN','PINECONE_API_KEY','PINECONE_INDEX_HOST','OPENAI_API_KEY','PROFILE_MODEL_API_KEY'].map(k=>[k,!!env[k]]));
+    const present=Object.fromEntries(['SUPABASE_URL','SUPABASE_SECRET_KEY','SUPABASE_SERVICE_ROLE_KEY','SUPABASE_ACCESS_TOKEN','PINECONE_API_KEY','PINECONE_INDEX_HOST','GEMINI_API_KEY'].map(k=>[k,!!env[k]]));
     report({configured:present});
     if(env.PINECONE_API_KEY){const data=await request('https://api.pinecone.io/indexes',{headers:{'Api-Key':env.PINECONE_API_KEY,'X-Pinecone-Api-Version':'2025-10'}});report({pineconeKeyAccepted:true,indexCount:data.indexes?.length||0});}
     if(env.SUPABASE_URL&&(env.SUPABASE_SECRET_KEY||env.SUPABASE_SERVICE_ROLE_KEY)){
@@ -52,7 +52,7 @@ try{
       current=pattern.test(current)?current.replace(pattern,key+'='+value):current+'\n'+key+'='+value+'\n';
     }
     writeFileSync(envFile,current);
-    report({indexReady:true,name,embeddingModel:'text-embedding-3-large',dimensions:3072,localSettingsSaved:true});
+    report({indexReady:true,name,embeddingModel:'gemini-embedding-001',dimensions:3072,namespaceIsolation:'per-owner Gemini namespace; legacy vectors are not queried',localSettingsSaved:true});
   }else if(command==='pinecone'){
     if(!env.PINECONE_API_KEY)throw new Error('Add PINECONE_API_KEY to .env.local first.');
     const name=env.PINECONE_INDEX_NAME||'career-scout-profile-memory-v1';

@@ -1,7 +1,14 @@
-# Profile workflow: Supabase and Pinecone
+# Profile workflow: Gemini, Supabase and Pinecone
 
-Implementation: 2026-10-29, America/New_York. This documents implemented code and
-explicit activation gates; configuration alone is not successful operation.
+Implementation: 2026-10-29, America/New_York. Gemini replaces the prior OpenAI
+analysis and embedding integrations at the user's request. Supabase records and
+Pinecone storage are retained. Local synthetic extraction/embedding checks passed;
+provider activation, representative quality and full browser flows are tracked
+separately. Configuration alone is not successful operation.
+
+Structural diagram: `/profile/architecture`; maintained source diagram and layer
+checklist: [profile-architecture.md](profile-architecture.md). Its statuses come
+from the same reviewed `data/scout-progress.json` record as `/progress`.
 
 ## Routing
 
@@ -19,8 +26,12 @@ continues through Master. Existing Sites authentication remains in place.
 - Private Storage bucket career-profile-private: original files under a hashed
   owner namespace and document ID.
 - Pinecone career-scout-profile-3large-v1: cosine similarity, 3,072 dimensions.
-- Embeddings: user-selected OpenAI text-embedding-3-large.
-- Analysis: user-selected GPT Sol, configured as gpt-6.1-sol.
+- Embeddings: Gemini `gemini-embedding-001`, pinned to 3,072 dimensions.
+- Analysis: Gemini `gemini-3.1-flash-lite`, constrained JSON with domain validation.
+- Credentials: server-only `GEMINI_API_KEY`. Profile ignores legacy OpenAI keys,
+  endpoint overrides and model settings. No paid fallback or automatic retries are
+  used. Model eligibility does not inspect the Google billing tier; keep the
+  Google project on its free tier with billing disabled.
 
 Aggregate updates make approvals, snapshots and outbox changes transactional.
 Writes for one user serialize; normalize tables when histories outgrow this
@@ -74,9 +85,14 @@ context, plus separately labelled JD requirements. Keep short statements intact.
 Contact/preferences are excluded from embedding. Full provenance stays in
 Supabase; indexed citation metadata is bounded.
 
-Chunking happens before embedding. OpenAI produces 3,072-value finite vectors.
-Pinecone stores and queries them. Index-host identity, model and dimensions are
-bound to synchronization state. Unchanged records are not re-embedded.
+Chunking happens before embedding. Gemini produces 3,072-value finite, nonzero
+vectors with RETRIEVAL_DOCUMENT or RETRIEVAL_QUERY task types. Pinecone stores and
+queries them. Index-host identity, provider, model, dimensions, namespace and
+retrieval version are bound to synchronization state. Unchanged records are not
+re-embedded. Gemini vectors use an owner-scoped `-gemini-001-3072-v1` namespace;
+legacy OpenAI vectors are never compared with Gemini queries. Existing file paths
+and approval records are unchanged. Recorded old/new index locations remain
+available to explicit profile deletion, including both namespaces on one host.
 
 ## JD and Builder records
 
@@ -119,6 +135,12 @@ Direct lookup retrieves known facts. Whole-token keyword and Pinecone semantic
 results are fused by reciprocal rank. Results are rehydrated against current
 owned records; scores cannot authorize claims or revive withdrawn evidence.
 
+Without Gemini credentials, when `PROFILE_SEMANTIC_SEARCH=disabled`, or after a
+semantic provider failure/quota rejection, approved database keyword retrieval
+remains available. Paused search makes no embedding calls. Quota errors preserve
+documents and approvals, expose bounded Retry-After/RetryInfo guidance and do not
+automatically retry, change models, enable billing or fall back to OpenAI.
+
 Indexing persists an intent and lease before remote writes. Mutations schedule
 a bounded 20-passage background drain using the Worker lifetime extension.
 Manual sync handles at most 160 changed passages and resumes through a manifest.
@@ -146,11 +168,22 @@ claimed.
    202610290002_profile_conflict_response.sql correction. Revision 2026-10-29.2
    uses PostgREST PT409 for expected stale-write conflicts rather than a
    transaction-rollback/server-error response.
-3. Configure OpenAI API access through OpenAI Developers secure-key setup.
+3. Create a Gemini key in Google AI Studio on a free-tier project; save only to
+   ignored `.env.local` as `GEMINI_API_KEY`. Never paste a key into chat or source.
 4. Run node scripts/profile-setup.mjs pinecone-vectors.
 5. Run node scripts/profile-setup.mjs check.
 6. Configure allowlisted values as hosted server secrets.
 7. Evaluate real extraction/retrieval using consented or fixture data.
+
+`node scripts/profile-gemini-check.mjs` performs at most three live Gemini requests
+using synthetic evidence: factual extraction and document/query embeddings. It
+does not load Supabase user records, approve real facts or call OpenAI. A successful
+smoke check does not establish representative JD/Builder or retrieval quality.
+
+Gemini free-tier quotas and data-use terms apply to submitted text. The free tier
+may use content to improve Google's products. This migration changes the provider,
+not the privacy status or disclosure preference of existing records. Keep real
+resume/account migration a separate deliberate step.
 
 Never copy the private resume exercise into source or deployments. Its local
 confirmations remain intact; account migration needs identity/source mapping.
@@ -183,6 +216,31 @@ checks migration health and an empty random diagnostic owner through the exact
 profile-loading RPC. It returns no keys, provider URLs or user records and grants
 no visitor-profile access. It supports hosted transport checks without borrowing
 a person's identity. Private profile endpoints still require visitor identity.
+
+## OpenAI analysis errors and recovery
+
+An API key and successful model metadata requests do not establish available
+credits or successful inference. A minimal synthetic analysis request on
+2026-10-29 returned HTTP 429 with type insufficient_quota. Local credentials
+are saved, but billing/quota restoration and successful output evaluation remain
+required. Hosted OpenAI activation is still separate.
+
+OpenAI errors now use fixed, sanitized messages for exhausted credits, spend
+limits, organization usage limits, generic insufficient quota, temporary rate
+limits, authentication and model access. Specific billing codes take precedence
+over the broader insufficient_quota type. Temporary throttling reports a valid
+Retry-After delay when supplied. Provider messages and source text are never
+reflected. No automatic model retries occur, including for billing failures.
+
+The local Profile error banner links to OpenAI Platform billing and limits.
+Restore the relevant balance or limit before retrying a quota failure; a new key
+does not resolve it. Failed analysis records a failed run without replacing
+documents, facts or approvals. No partial model proposals are accepted.
+
+Node and actual Workers tests cover quota versus rate limits for both analysis
+and embeddings. These checks validate failure handling, not real extraction or
+semantic quality. Official error guidance:
+https://developers.openai.com/api/docs/guides/error-codes
 
 ## Primary references
 
