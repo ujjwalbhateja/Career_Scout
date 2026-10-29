@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "revision": "2026-10-29.9",
+  "revision": "2026-10-29.10",
   "reviewedOn": "2026-10-29",
   "summary": "Resume-only role proposals and the approved Profile → Master → Keenable search handoff are implemented. JD-based building remains optional. Full authenticated user onboarding, representative quality, Matcher, Tailor and Critic remain separate pending work.",
   "framework": {
@@ -2527,7 +2527,8 @@
       "notes": [
         "Added with the user-approved Profile workflow; source implementation and operational activation are tracked separately.",
         "2026-10-29 approval repair: reload the latest record before a decision; bind the reviewed fact version/fingerprint/prior approval; preserve server revision conflicts; verify saved status before success; ignore lower-revision reads; lock duplicate inputs; poll indexing/foreground state. Direct per-fact approval, explicit batch outcomes and saved decision history added. No existing user decisions were changed. Exact cause of the reported rejection is not established.",
-        "2026-10-29: A native Chrome click on the correctly addressed Discover jobs link remained on Profile; navigation changed to native anchors. Exact cause of the former client-navigation failure is not established; full authenticated workflow/browser acceptance remains open."
+        "2026-10-29: A native Chrome click on the correctly addressed Discover jobs link remained on Profile; navigation changed to native anchors. Exact cause of the former client-navigation failure is not established; full authenticated workflow/browser acceptance remains open.",
+        "2026-10-29: User reported main-page My profile did not return to Profile. Applied native navigation in both directions; bidirectional live verification follows publication. Full model/onboarding/mobile acceptance remains separate."
       ],
       "outputLinks": [
         {
@@ -2737,7 +2738,8 @@
       "notes": [
         "2026-10-29: Implementation added; synthetic regression checks and release verification in progress. Full authenticated browser onboarding remains tracked separately.",
         "Bounded implementation and synthetic validation complete. Actual user role review, activation and hosted job search remain user onboarding steps; full browser/mobile and representative quality remain tracked separately.",
-        "2026-10-29: Profile Discover jobs, brand, footer and approved-role search links use native browser anchors to the canonical same-site root search page. User-requested navigation repair; role/snapshot parameters remain preserved. No changes to approvals or providers."
+        "2026-10-29: Profile Discover jobs, brand, footer and approved-role search links use native browser anchors to the canonical same-site root search page. User-requested navigation repair; role/snapshot parameters remain preserved. No changes to approvals or providers.",
+        "2026-10-29: Corrected the return direction as well: main Scout My profile and Review my profile use native /profile anchors. The prior release changed only outbound Profile-to-Scout links. Statuses and user decisions unchanged."
       ],
       "outputLinks": [
         {
