@@ -169,6 +169,21 @@ evaluation, browser QA and hosted end-to-end profile verification. Daily
 scheduling, production Tailor/Critic generation and application delivery remain
 separate existing work.
 
+## Workers transport verification
+
+Provider requests use manual redirect mode and explicitly reject redirects.
+Cloudflare Workers rejects redirect:error before sending a request; ordinary
+Node tests do not catch this runtime difference. The regression tests in
+tests/profile-worker.test.mjs execute the real provider module under workerd.
+They cover profile load/health, private download, Pinecone, embeddings and model
+transport with mocked responses, plus credential-preserving redirect rejection.
+
+/api/profile/health is metadata-only behind the private Sites access gate. It
+checks migration health and an empty random diagnostic owner through the exact
+profile-loading RPC. It returns no keys, provider URLs or user records and grants
+no visitor-profile access. It supports hosted transport checks without borrowing
+a person's identity. Private profile endpoints still require visitor identity.
+
 ## Primary references
 
 - https://supabase.com/docs/guides/database/functions
@@ -177,3 +192,4 @@ separate existing work.
 - https://docs.pinecone.io/reference/api/2025-10/data-plane/query
 - https://developers.openai.com/api/docs/guides/embeddings
 - https://developers.openai.com/api/docs/models/gpt-6.1-sol
+- https://developers.cloudflare.com/workers/runtime-apis/request/

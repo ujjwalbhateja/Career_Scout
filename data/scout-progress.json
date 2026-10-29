@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
-  "revision": "2026-10-29.2",
+  "revision": "2026-10-29.3",
   "reviewedOn": "2026-10-29",
-  "summary": "Supabase schema, private storage and durable approvals are verified. Profile adapters and reusable approvals are deployed; OpenAI model credentials and real-model evaluation remain pending.",
+  "summary": "Supabase persistence is verified. A hosted Workers fetch incompatibility was reproduced and corrected with actual-runtime regression tests; OpenAI model access remains pending.",
   "framework": {
     "name": "LangGraph",
     "version": "1.5.2",
     "mode": "Executable workflow and Profile intake implementation; provider activation pending",
-    "note": "Supabase persistence and access controls passed live synthetic verification. Profile AI analysis and embeddings await OpenAI credentials; daily application drafting is not activated.",
+    "note": "Supabase records and private storage are connected. Provider requests now use Workers-compatible redirect handling with real-runtime coverage. Profile AI analysis and embeddings await OpenAI credentials.",
     "documentation": "https://docs.langchain.com/oss/javascript/langgraph/thinking-in-langgraph"
   },
   "agents": [
@@ -2209,7 +2209,8 @@
       "notes": [
         "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
         "2026-10-29: User ran the initial SQL migration. Live synthetic checks passed private upload/download, public-access denial, direct-table/RPC restrictions and approval persistence. Stale writes surfaced a service failure; tested PT409 correction prepared for SQL Editor.",
-        "2026-10-29: Corrected migration 2026-10-29.2 verified live. All 12 synthetic checks passed: private storage, persisted approval, denied direct/public/anonymous access, owner isolation, immediate HTTP 409 conflicts and content cleanup. No personal resume or model calls used."
+        "2026-10-29: Corrected migration 2026-10-29.2 verified live. All 12 synthetic checks passed: private storage, persisted approval, denied direct/public/anonymous access, owner isolation, immediate HTTP 409 conflicts and content cleanup. No personal resume or model calls used.",
+        "2026-10-29: User-reported hosted GET /api/profile failure reproduced under workerd before any upstream call. Replaced unsupported fetch redirect:error with manual redirect handling and explicit redirect rejection; actual-runtime tests cover provider transport and redirect credential protection. Added metadata-only hosted connection probe."
       ],
       "outputLinks": [
         {
@@ -2413,7 +2414,8 @@
       "notes": [
         "Added with the user-approved Profile workflow; source implementation and operational activation are tracked separately.",
         "2026-10-29: User ran the initial SQL migration. Live synthetic checks passed private upload/download, public-access denial, direct-table/RPC restrictions and approval persistence. Stale writes surfaced a service failure; tested PT409 correction prepared for SQL Editor.",
-        "2026-10-29: Corrected migration 2026-10-29.2 verified live. All 12 synthetic checks passed: private storage, persisted approval, denied direct/public/anonymous access, owner isolation, immediate HTTP 409 conflicts and content cleanup. No personal resume or model calls used."
+        "2026-10-29: Corrected migration 2026-10-29.2 verified live. All 12 synthetic checks passed: private storage, persisted approval, denied direct/public/anonymous access, owner isolation, immediate HTTP 409 conflicts and content cleanup. No personal resume or model calls used.",
+        "2026-10-29: User-reported hosted GET /api/profile failure reproduced under workerd before any upstream call. Replaced unsupported fetch redirect:error with manual redirect handling and explicit redirect rejection; actual-runtime tests cover provider transport and redirect credential protection. Added metadata-only hosted connection probe."
       ],
       "outputLinks": [
         {
@@ -2463,7 +2465,8 @@
       "notes": [
         "Added with the user-approved Profile workflow; source implementation and operational activation are tracked separately.",
         "2026-10-29: User ran the initial SQL migration. Live synthetic checks passed private upload/download, public-access denial, direct-table/RPC restrictions and approval persistence. Stale writes surfaced a service failure; tested PT409 correction prepared for SQL Editor.",
-        "2026-10-29: Corrected migration 2026-10-29.2 verified live. All 12 synthetic checks passed: private storage, persisted approval, denied direct/public/anonymous access, owner isolation, immediate HTTP 409 conflicts and content cleanup. No personal resume or model calls used."
+        "2026-10-29: Corrected migration 2026-10-29.2 verified live. All 12 synthetic checks passed: private storage, persisted approval, denied direct/public/anonymous access, owner isolation, immediate HTTP 409 conflicts and content cleanup. No personal resume or model calls used.",
+        "2026-10-29: User-reported hosted GET /api/profile failure reproduced under workerd before any upstream call. Replaced unsupported fetch redirect:error with manual redirect handling and explicit redirect rejection; actual-runtime tests cover provider transport and redirect credential protection. Added metadata-only hosted connection probe."
       ],
       "outputLinks": [
         {
@@ -2611,6 +2614,11 @@
       "date": "2026-10-29",
       "title": "Supabase activation: corrected live verification",
       "detail": "All 12 checks passed against migration 2026-10-29.2, including private upload/download, access denial, approval persistence, owner isolation, HTTP 409 stale writes and synthetic cleanup. Regression suite: 110 tests. OpenAI credentials and real-model/browser evaluation remain pending."
+    },
+    {
+      "date": "2026-10-29",
+      "title": "Profile provider transport: Workers regression",
+      "detail": "Two actual workerd tests pass for profile RPC, health, private download, Pinecone, embedding and model transport using fixtures. Unsupported redirect mode reproduced the original error before networking; manual redirects resolve it while rejecting cross-host redirects. These tests do not establish real model quality."
     }
   ]
 }

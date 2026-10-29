@@ -44,6 +44,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "miniflare": "4.20260515.0",
     "@electric-sql/pglite": "0.5.13",
     "@cloudflare/vite-plugin": "1.37.1",
     "@cloudflare/workers-types": "4.20260515.1",
