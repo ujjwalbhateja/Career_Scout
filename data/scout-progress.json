@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "revision": "2026-10-29.13",
+  "revision": "2026-10-29.14",
   "reviewedOn": "2026-10-29",
   "summary": "Career Scout now has a profile-first guided workspace: resume and optional JD intake, fact review, supported role proposals, follow-up questions/search goals and embedded Keenable jobs. Supabase/Pinecone/Gemini and approval boundaries are retained. Full real-user model quality/onboarding and downstream career agents remain separately tracked. Local Python orchestration foundation added alongside the hosted JS app; production adapters, durable execution and the authenticated Python bridge remain pending. No new deployment is implied.",
   "framework": {
@@ -2888,7 +2888,8 @@
       "detail": "Package real Master and nested Profile LangGraph coordinators with ten editable agent prompts, scoped typed tools, approval stops and bounded review/storage gates. Validate with offline synthetic adapters; no production adapter completion is implied.",
       "blockers": [],
       "notes": [
-        "2026-10-29: Local Python backend work only. Hosted version 17, user data, existing JS providers and UI are unchanged."
+        "2026-10-29: Local Python backend work only. Hosted version 17, user data, existing JS providers and UI are unchanged.",
+        "2026-10-29: Repository and app promoted to job_search root with existing Git history. Entire research/ and .local/ excluded from commits; maintained context moved to docs/PROJECT_CONTEXT.md. This layout change does not complete production adapters or deployment."
       ],
       "outputLinks": [],
       "evidence": "2026-10-29: 35 Python tests and 167 existing JS tests passed. Tests cover JS route parity, optional JDs, source evidence, approval stops, scoped inputs, independent review/storage gates, bounded revisions, stale/malformed outputs, per-run budgets/owners and timeouts. Ruff, locked offline sync, CLI and wheel checks passed. Provider implementations remain unbound and the Python service is not deployed.",
@@ -3101,6 +3102,11 @@
       "date": "2026-10-29",
       "title": "Python multi-agent foundation: local offline validation",
       "detail": "35 Python tests and all 167 existing JavaScript tests passed. Ruff lint/format checks, locked offline dependency sync, zero-call CLI check and source/wheel builds passed. Wheel inspection confirms the production entrypoint and all ten prompt.md files without env/venv/test payloads. Tests use synthetic injected adapters; no private resume, provider calls, approval changes, UI deployment or production Python adapters were exercised."
+    },
+    {
+      "date": "2026-10-29",
+      "title": "Root repository reorganization: local validation",
+      "detail": "Application and existing Git history moved to job_search root. 160 protected files matched original SHA-256 hashes after relocation. 167 app tests, 35 Python tests, Ruff, TypeScript and production build passed from the new location. Start-Scout.cmd served the profile workspace and progress API with HTTP 200. Entire research/ and .local/ plus credentials remain untracked/ignored; generated TypeScript cache removed from tracking. No provider calls, approval changes, remote push or deployment. The original Job Search directory remains empty but locked by the open workspace."
     }
   ]
 }

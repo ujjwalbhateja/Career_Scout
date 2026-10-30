@@ -37,6 +37,7 @@ yarn-error.log*
 
 # typescript
 next-env.d.ts
+*.tsbuildinfo
 
 # Maintained Vite plugin and worker sources.
 !/build/
@@ -53,8 +54,10 @@ next-env.d.ts
 /.sites-runtime/
 /.agents/
 /.codex/
-/outputs/
-/work/
+# Local research, private inputs, migration records and historical checks.
+/research/
+# Local runtimes, caches, machine state and preserved migration backups.
+/.local/
 
 # Python agent service (source and uv.lock are committed).
 **/.venv/
@@ -64,3 +67,5 @@ next-env.d.ts
 **/*.egg-info/
 backend/dist/
 backend/.coverage
+
+backend/.cache/

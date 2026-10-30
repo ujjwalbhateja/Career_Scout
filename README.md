@@ -10,7 +10,11 @@ The new [backend package](backend/README.md) contains a production composition e
 
 ## Run locally
 
-Use Node 22.13+ (x64 on Windows ARM), install dependencies with `npm ci`, and run `npm run dev`. The project-root `Start-Scout.ps1` uses the bundled runtime. Save `KEENABLE_API_KEY` in the ignored `.env.local` file. Never use a `VITE_` or `NEXT_PUBLIC_` prefix for this key.
+Open `C:\Users\ujjwa\job_search` as the project. This folder is both the application root and the Git root; `package.json` and `backend/` are directly inside it. Read the [folder map](docs/repository-layout.md) and [current project context](docs/PROJECT_CONTEXT.md).
+
+On this machine, run `Start-Scout.cmd` from the root; it uses the preserved Node/npm runtimes under `.local/tools/` and works without changing PowerShell execution policy. `Start-Scout.ps1` is also available where scripts are permitted. For a fresh clone, use Node 22.13+ (x64 on Windows ARM), install dependencies with `npm ci`, and run `npm run dev`. Save `KEENABLE_API_KEY` in ignored root `.env.local`; never use a `VITE_` or `NEXT_PUBLIC_` prefix for credentials.
+
+All research, original inputs, private documents, historical analysis scripts and migration records live under ignored `research/`. Runtimes, caches and preserved backups live under ignored `.local/`. Source code, agent prompts, maintained docs, tests and lockfiles remain version-controlled. Neither local-only folder is included in remote pushes.
 
 The hosted site reads the same name from a Sites **secret**, supplied through request-local Worker environment bindings. A local file or VS Code MCP configuration does not configure production. Deploy after changing hosted environment variables. Keep this deployment owner-private.
 

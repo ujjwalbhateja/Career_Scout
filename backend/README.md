@@ -38,7 +38,7 @@ backend/
   tests/                    # synthetic adapters; no network or private resumes
 ```
 
-The existing `app/`, `lib/`, `supabase/`, `tests/` and `scripts/` at repository root remain the current web app, service, migrations and checks. We are extending the repo as a web + Python backend layout rather than moving functioning routes during a backend-only change.
+The repository/app root is `job_search/`. Its `app/`, `lib/`, `supabase/`, `tests/` and `scripts/` directories hold the current web app, services, migrations and checks; `backend/` contains this Python package. Research and machine-local tools are excluded from Git. See [the repository layout](../docs/repository-layout.md).
 
 ## Install and check
 
@@ -58,7 +58,7 @@ uv build
 This machine's existing Python launcher is blocked by Windows Application Control. The installed Codex Python runtime works; use an explicit interpreter with uv if needed:
 
 ```powershell
-$env:UV_CACHE_DIR = 'C:\Users\ujjwa\Job Search\work\uv-cache'
+$env:UV_CACHE_DIR = Join-Path (Split-Path -Parent $PWD.Path) '.local/cache/uv-cache'
 uv sync --locked --python 'C:\Users\ujjwa\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe'
 .\.venv\Scripts\python.exe -m pytest -q
 ```
