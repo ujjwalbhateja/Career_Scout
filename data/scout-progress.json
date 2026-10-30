@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
-  "revision": "2026-10-29.12",
+  "revision": "2026-10-29.13",
   "reviewedOn": "2026-10-29",
-  "summary": "Career Scout now has a profile-first guided workspace: resume and optional JD intake, fact review, supported role proposals, follow-up questions/search goals and embedded Keenable jobs. Supabase/Pinecone/Gemini and approval boundaries are retained. Full real-user model quality/onboarding and downstream career agents remain separately tracked.",
+  "summary": "Career Scout now has a profile-first guided workspace: resume and optional JD intake, fact review, supported role proposals, follow-up questions/search goals and embedded Keenable jobs. Supabase/Pinecone/Gemini and approval boundaries are retained. Full real-user model quality/onboarding and downstream career agents remain separately tracked. Local Python orchestration foundation added alongside the hosted JS app; production adapters, durable execution and the authenticated Python bridge remain pending. No new deployment is implied.",
   "framework": {
     "name": "LangGraph",
     "version": "1.5.2",
     "mode": "Profile implementation deployed with Gemini; full authenticated workflow validation remains",
-    "note": "Gemini adapters and the structural diagram are deployed. Local synthetic extraction, JD/Builder/assessment and Pinecone retrieval passed, and hosted storage/access checks passed. Configuration and these bounded checks do not establish full real-profile readiness.",
+    "note": "Gemini adapters and the structural diagram are deployed. Local synthetic extraction, JD/Builder/assessment and Pinecone retrieval passed, and hosted storage/access checks passed. Configuration and these bounded checks do not establish full real-profile readiness. Python LangGraph 1.2.18 is separately pinned in backend/uv.lock for the local multi-agent foundation; the hosted JavaScript runtime remains unchanged.",
     "documentation": "https://docs.langchain.com/oss/javascript/langgraph/thinking-in-langgraph"
   },
   "agents": [
@@ -1499,7 +1499,8 @@
       "acceptance": "Resume an interrupted run safely without duplicate jobs, model calls or saves.",
       "blockers": [],
       "notes": [
-        "The compiled graph is currently ephemeral. Permanent checkpoint storage remains unimplemented."
+        "The compiled graph is currently ephemeral. Permanent checkpoint storage remains unimplemented.",
+        "2026-10-29: Python package and synthetic graph tests do not complete this production requirement. See master-python-foundation, master-python-adapters and master-python-service."
       ],
       "outputLinks": []
     },
@@ -1518,7 +1519,8 @@
       "blockers": [],
       "notes": [
         "2026-10-29: Optional resume-only intake and bounded Profile → Master → Scout discovery added as separate deliverables. Existing JD intake and full pipeline acceptance are preserved.",
-        "2026-10-29: Profile-first guided workspace added with optional single-JD/link support, persisted goals and Master intake. Existing full quality, authenticated onboarding and downstream-pipeline acceptance remain open; do not infer completion from the redesigned controls."
+        "2026-10-29: Profile-first guided workspace added with optional single-JD/link support, persisted goals and Master intake. Existing full quality, authenticated onboarding and downstream-pipeline acceptance remain open; do not infer completion from the redesigned controls.",
+        "2026-10-29: Python package and synthetic graph tests do not complete this production requirement. See master-python-foundation, master-python-adapters and master-python-service."
       ],
       "outputLinks": []
     },
@@ -2872,6 +2874,62 @@
           "url": "/?view=workflow"
         }
       ]
+    },
+    {
+      "id": "master-python-foundation",
+      "owner": "master",
+      "title": "Python orchestrator, agent prompts and typed tool foundation",
+      "status": "complete",
+      "stage": "agent-development",
+      "dependsOn": [
+        "master-policy"
+      ],
+      "acceptance": "Package real Master and nested Profile LangGraph coordinators with ten editable agent prompts, scoped typed tools, approval stops and bounded review/storage gates. Validate with offline synthetic adapters; no production adapter completion is implied.",
+      "detail": "Package real Master and nested Profile LangGraph coordinators with ten editable agent prompts, scoped typed tools, approval stops and bounded review/storage gates. Validate with offline synthetic adapters; no production adapter completion is implied.",
+      "blockers": [],
+      "notes": [
+        "2026-10-29: Local Python backend work only. Hosted version 17, user data, existing JS providers and UI are unchanged."
+      ],
+      "outputLinks": [],
+      "evidence": "2026-10-29: 35 Python tests and 167 existing JS tests passed. Tests cover JS route parity, optional JDs, source evidence, approval stops, scoped inputs, independent review/storage gates, bounded revisions, stale/malformed outputs, per-run budgets/owners and timeouts. Ruff, locked offline sync, CLI and wheel checks passed. Provider implementations remain unbound and the Python service is not deployed.",
+      "source": "backend/src/career_scout/agent.py"
+    },
+    {
+      "id": "master-python-adapters",
+      "owner": "master",
+      "title": "Connect production adapters to Python contracts",
+      "status": "not_started",
+      "stage": "agent-development",
+      "dependsOn": [
+        "master-python-foundation"
+      ],
+      "acceptance": "Connect current owner-scoped Profile/Supabase approvals, Gemini analysis/embeddings and bounded Keenable discovery. Then implement Matcher/Tailor/Critic/Storage adapters with representative evaluation and no fake approvals or paid fallback.",
+      "detail": "Connect current owner-scoped Profile/Supabase approvals, Gemini analysis/embeddings and bounded Keenable discovery. Then implement Matcher/Tailor/Critic/Storage adapters with representative evaluation and no fake approvals or paid fallback.",
+      "blockers": [],
+      "notes": [
+        "2026-10-29: Local Python backend work only. Hosted version 17, user data, existing JS providers and UI are unchanged."
+      ],
+      "outputLinks": [],
+      "source": "backend/src/career_scout/agent.py"
+    },
+    {
+      "id": "master-python-service",
+      "owner": "master",
+      "title": "Deploy authenticated durable Python service and web bridge",
+      "status": "not_started",
+      "stage": "agent-development",
+      "dependsOn": [
+        "master-python-adapters",
+        "master-state"
+      ],
+      "acceptance": "Deploy a separately hosted Python service with trusted owner identity, durable recovery/checkpoints, idempotent writes, stale-profile guards, cancellation and redacted observability. Connect the existing web service only after integration tests pass.",
+      "detail": "Deploy a separately hosted Python service with trusted owner identity, durable recovery/checkpoints, idempotent writes, stale-profile guards, cancellation and redacted observability. Connect the existing web service only after integration tests pass.",
+      "blockers": [],
+      "notes": [
+        "2026-10-29: Local Python backend work only. Hosted version 17, user data, existing JS providers and UI are unchanged."
+      ],
+      "outputLinks": [],
+      "source": "backend/src/career_scout/agent.py"
     }
   ],
   "communication": [
@@ -3038,6 +3096,11 @@
       "date": "2026-10-29",
       "title": "Guided workspace: final component and intake checks",
       "detail": "Ten actual guided workspace scenarios, five actual Scout scenarios and eight diagram SSR/component scenarios passed. Fifteen targeted backend cases cover zero/single-JD role building, HTML/DOCX/PDF links, public DNS/redirect/size checks, Master routing, sequential source analysis, nonrepeating resume-only questions, persisted preferences, durable answers on model failure and atomic snapshot/preferences activation. Desktop landing, optional link toggle and embedded Jobs visually inspected. Mobile/browser automation was interrupted by active user input, so mobile/full real-user onboarding is not claimed."
+    },
+    {
+      "date": "2026-10-29",
+      "title": "Python multi-agent foundation: local offline validation",
+      "detail": "35 Python tests and all 167 existing JavaScript tests passed. Ruff lint/format checks, locked offline dependency sync, zero-call CLI check and source/wheel builds passed. Wheel inspection confirms the production entrypoint and all ten prompt.md files without env/venv/test payloads. Tests use synthetic injected adapters; no private resume, provider calls, approval changes, UI deployment or production Python adapters were exercised."
     }
   ]
 }

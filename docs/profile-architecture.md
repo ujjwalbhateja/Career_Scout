@@ -1,6 +1,6 @@
 # Profile Agent: structure and reviewed progress
 
-Reviewed 2026-10-29; record revision 2026-10-29.12. Generated from the same task mapping and reviewed record as /profile/architecture. States summarize tracked acceptance; they are not live health checks. There are 35 distinct items in the diagram, including Master dispatch; shared items are counted once.
+Reviewed 2026-10-29; record revision 2026-10-29.13. Generated from the same task mapping and reviewed record as /profile/architecture. States summarize tracked acceptance; they are not live health checks. There are 38 distinct items in the diagram, including Master dispatch; shared items are counted once.
 
 ```mermaid
 flowchart TD
@@ -31,6 +31,9 @@ Routes requests and approved results. Approved role discovery is connected to Ke
 - **not started** — Production dispatch and scoped payloads (`master-routing`)
 - **complete** — Approved Profile to Master to Keenable discovery (`master-profile-scout`) Evidence: 2026-10-29: 152 automated tests and TypeScript passed; 10 actual Profile/Scout component scenarios passed with synthetic state. One live Gemini resume-builder request produced three valid proposed roles from synthetic approved facts, without JDs, real approvals or personal profile reads.
 - **complete** — Master dispatch for guided profile intake and criteria (`master-guided-intake`) Evidence: 2026-10-29: 152 existing backend tests and 15 new guided/link/dispatch cases passed. Ten guided workspace-component scenarios passed against synthetic ProfileService persistence; five Scout and eight diagram component regressions passed. One live synthetic Gemini request returned two valid proposed roles. Desktop intake/link/embedded Jobs layout inspected; full real-user/mobile evaluation remains tracked separately.
+- **complete** — Python orchestrator, agent prompts and typed tool foundation (`master-python-foundation`) Evidence: 2026-10-29: 35 Python tests and 167 existing JS tests passed. Tests cover JS route parity, optional JDs, source evidence, approval stops, scoped inputs, independent review/storage gates, bounded revisions, stale/malformed outputs, per-run budgets/owners and timeouts. Ruff, locked offline sync, CLI and wheel checks passed. Provider implementations remain unbound and the Python service is not deployed.
+- **not started** — Connect production adapters to Python contracts (`master-python-adapters`)
+- **not started** — Deploy authenticated durable Python service and web bridge (`master-python-service`)
 
 ### Profile Agent
 

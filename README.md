@@ -4,6 +4,10 @@ A private, profile-first workspace: add a resume and an optional uploaded/linked
 
 The main URL lands on My Profile. Jobs, workflow and project status are views in the same workspace. Legacy bookmarked routes redirect to those views. One optional analyzed JD is sufficient in guided mode; no JD is required for resume-only building.
 
+## Python agent backend (local foundation)
+
+The new [backend package](backend/README.md) contains a production composition entrypoint at `backend/src/career_scout/agent.py`, Master/Profile LangGraph coordinators, ten editable `prompt.md` files, eight typed tool contracts and offline tests. See the [architecture diagram and rollout plan](docs/python-agent-architecture.md). Real Python provider adapters, durable state and the authenticated web bridge remain pending; the deployed JS app and UI continue to operate as before.
+
 ## Run locally
 
 Use Node 22.13+ (x64 on Windows ARM), install dependencies with `npm ci`, and run `npm run dev`. The project-root `Start-Scout.ps1` uses the bundled runtime. Save `KEENABLE_API_KEY` in the ignored `.env.local` file. Never use a `VITE_` or `NEXT_PUBLIC_` prefix for this key.

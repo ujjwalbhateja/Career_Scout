@@ -55,3 +55,12 @@ next-env.d.ts
 /.codex/
 /outputs/
 /work/
+
+# Python agent service (source and uv.lock are committed).
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.ruff_cache/
+**/*.egg-info/
+backend/dist/
+backend/.coverage
