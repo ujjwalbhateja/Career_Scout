@@ -3,6 +3,7 @@ import { getProfileEnvironment, scheduleProfileWork } from '@/lib/profile-runtim
 import { ProfileService } from '@/lib/profile/service.mjs';
 import { ProfileError, LIMITS } from '@/lib/profile/domain.mjs';
 import { providerStatus } from '@/lib/profile/providers.mjs';
+import {dispatchProfileOperation} from '@/lib/workflow/profile-intake.mjs';
 
 export const dynamic='force-dynamic';
 const headers={'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Vary':'Cookie, Origin'};
@@ -44,12 +45,12 @@ export async function POST(request:Request){
       const form=await new Response(bytes,{headers:{'Content-Type':contentType}}).formData();
       const file=form.get('file');
       if(!file||typeof file==='string')throw new ProfileError('Choose a document.');
-      result=await profile.upload(file,{kind:form.get('kind'),title:form.get('title'),selected:form.get('selected')==='true',revision:form.get('revision')});
+      result=await dispatchProfileOperation(profile,{file,body:{kind:form.get('kind'),title:form.get('title'),selected:form.get('selected')==='true',revision:form.get('revision')}});
     }else if(contentType.startsWith('application/json')){
       let body;try{body=JSON.parse(new TextDecoder().decode(bytes));}catch{throw new ProfileError('Use valid JSON.');}
       if(!body||Array.isArray(body)||typeof body!=='object')throw new ProfileError('Invalid request.');
       if('owner_id' in body||'owner' in body||'namespace' in body)throw new ProfileError('Ownership is determined by your signed-in account.',403);
-      result=await profile.action(body);
+      result=await dispatchProfileOperation(profile,{body});
     }else throw new ProfileError('Use JSON or a document upload.',415);
     if(result.state?.outbox.some((event:{kind:string;status:string})=>event.kind==='reindex'&&event.status==='pending'))scheduleProfileWork(()=>profile.drainBackground());
     return Response.json(result,{headers});

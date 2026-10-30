@@ -1,6 +1,8 @@
 ﻿# Career Scout
 
-Private Keenable job discovery plus a source-linked Profile intake/review implementation using Supabase records and Pinecone vectors. Supabase is verified; Gemini activation and full workflow validation remain separate gates.
+A private, profile-first workspace: add a resume and an optional uploaded/linked JD, review facts, approve supported roles, clarify goals, then open embedded Keenable job discovery. Supabase records/files, Pinecone vectors and Gemini analysis/embeddings retain their existing ownership and approval boundaries. Full real-user model quality and downstream agent validation remain separate gates.
+
+The main URL lands on My Profile. Jobs, workflow and project status are views in the same workspace. Legacy bookmarked routes redirect to those views. One optional analyzed JD is sufficient in guided mode; no JD is required for resume-only building.
 
 ## Run locally
 

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
-  "revision": "2026-10-29.11",
+  "revision": "2026-10-29.12",
   "reviewedOn": "2026-10-29",
-  "summary": "Resume-only role proposals and the approved Profile → Master → Keenable search handoff are implemented. JD-based building remains optional. Full authenticated user onboarding, representative quality, Matcher, Tailor and Critic remain separate pending work.",
+  "summary": "Career Scout now has a profile-first guided workspace: resume and optional JD intake, fact review, supported role proposals, follow-up questions/search goals and embedded Keenable jobs. Supabase/Pinecone/Gemini and approval boundaries are retained. Full real-user model quality/onboarding and downstream career agents remain separately tracked.",
   "framework": {
     "name": "LangGraph",
     "version": "1.5.2",
@@ -1517,7 +1517,8 @@
       "acceptance": "All agent requests and results pass through Master; agents receive only required inputs.",
       "blockers": [],
       "notes": [
-        "2026-10-29: Optional resume-only intake and bounded Profile → Master → Scout discovery added as separate deliverables. Existing JD intake and full pipeline acceptance are preserved."
+        "2026-10-29: Optional resume-only intake and bounded Profile → Master → Scout discovery added as separate deliverables. Existing JD intake and full pipeline acceptance are preserved.",
+        "2026-10-29: Profile-first guided workspace added with optional single-JD/link support, persisted goals and Master intake. Existing full quality, authenticated onboarding and downstream-pipeline acceptance remain open; do not infer completion from the redesigned controls."
       ],
       "outputLinks": []
     },
@@ -1805,7 +1806,8 @@
       "notes": [
         "A tested intake boundary exists in the workflow foundation; a real intake UI and persistence are not yet built.",
         "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
-        "2026-10-29: Optional resume-only intake and bounded Profile → Master → Scout discovery added as separate deliverables. Existing JD intake and full pipeline acceptance are preserved."
+        "2026-10-29: Optional resume-only intake and bounded Profile → Master → Scout discovery added as separate deliverables. Existing JD intake and full pipeline acceptance are preserved.",
+        "2026-10-29: Profile-first guided workspace added with optional single-JD/link support, persisted goals and Master intake. Existing full quality, authenticated onboarding and downstream-pipeline acceptance remain open; do not infer completion from the redesigned controls."
       ],
       "outputLinks": [
         {
@@ -1923,7 +1925,8 @@
       ],
       "notes": [
         "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
-        "2026-10-29: Optional resume-only intake and bounded Profile → Master → Scout discovery added as separate deliverables. Existing JD intake and full pipeline acceptance are preserved."
+        "2026-10-29: Optional resume-only intake and bounded Profile → Master → Scout discovery added as separate deliverables. Existing JD intake and full pipeline acceptance are preserved.",
+        "2026-10-29: Profile-first guided workspace added with optional single-JD/link support, persisted goals and Master intake. Existing full quality, authenticated onboarding and downstream-pipeline acceptance remain open; do not infer completion from the redesigned controls."
       ],
       "outputLinks": [
         {
@@ -2425,7 +2428,8 @@
         "2026-10-29: Dedicated Career Scout key saved only in ignored local environment; metadata requests for both selected models returned 200. A minimal synthetic inference request returned HTTP 429 with type insufficient_quota. No resume data was sent by this diagnostic. Fixed local error handling to distinguish credits, spend/usage limits, generic quota and transient throttling without reflecting provider messages or automatically retrying billing errors. Hosted release is unchanged.",
         "2026-10-29: User selected Gemini analysis and embeddings. Local key saved without exposing it. Live synthetic check passed three Gemini requests: source-linked extraction and document/query embeddings at 3072 dimensions. OpenAI calls: zero. Hosted activation is tracked separately.",
         "2026-10-29: Gemini key configured as a hosted secret in environment revision 3; application deployment must apply it. Existing Supabase/Pinecone/Keenable secrets were preserved.",
-        "2026-10-29: Release 10 deployed with environment revision 3. All 14 hosted HTTP checks passed, including Gemini contract, reviewed record, Supabase health and identity/origin/private-access boundaries. Deployment and missing-key blockers are resolved; no hosted model request or personal profile read was part of these checks."
+        "2026-10-29: Release 10 deployed with environment revision 3. All 14 hosted HTTP checks passed, including Gemini contract, reviewed record, Supabase health and identity/origin/private-access boundaries. Deployment and missing-key blockers are resolved; no hosted model request or personal profile read was part of these checks.",
+        "2026-10-29: Profile-first guided workspace added with optional single-JD/link support, persisted goals and Master intake. Existing full quality, authenticated onboarding and downstream-pipeline acceptance remain open; do not infer completion from the redesigned controls."
       ],
       "outputLinks": [
         {
@@ -2529,7 +2533,8 @@
         "2026-10-29 approval repair: reload the latest record before a decision; bind the reviewed fact version/fingerprint/prior approval; preserve server revision conflicts; verify saved status before success; ignore lower-revision reads; lock duplicate inputs; poll indexing/foreground state. Direct per-fact approval, explicit batch outcomes and saved decision history added. No existing user decisions were changed. Exact cause of the reported rejection is not established.",
         "2026-10-29: A native Chrome click on the correctly addressed Discover jobs link remained on Profile; navigation changed to native anchors. Exact cause of the former client-navigation failure is not established; full authenticated workflow/browser acceptance remains open.",
         "2026-10-29: User reported main-page My profile did not return to Profile. Applied native navigation in both directions; bidirectional live verification follows publication. Full model/onboarding/mobile acceptance remains separate.",
-        "2026-10-29: Repeated reported navigation failures extended to Profile diagram. Remaining framework page links were replaced consistently across all five page components; authenticated live page and diagram-layer verification follows deployment. Full model/onboarding/mobile acceptance remains separate."
+        "2026-10-29: Repeated reported navigation failures extended to Profile diagram. Remaining framework page links were replaced consistently across all five page components; authenticated live page and diagram-layer verification follows deployment. Full model/onboarding/mobile acceptance remains separate.",
+        "2026-10-29: Profile-first guided workspace added with optional single-JD/link support, persisted goals and Master intake. Existing full quality, authenticated onboarding and downstream-pipeline acceptance remain open; do not infer completion from the redesigned controls."
       ],
       "outputLinks": [
         {
@@ -2758,6 +2763,115 @@
         }
       ],
       "evidence": "2026-10-29: 152 automated tests and TypeScript passed; 10 actual Profile/Scout component scenarios passed with synthetic state. One live Gemini resume-builder request produced three valid proposed roles from synthetic approved facts, without JDs, real approvals or personal profile reads."
+    },
+    {
+      "id": "profile-guided-workspace",
+      "owner": "profile",
+      "title": "One profile-first guided workspace",
+      "dependsOn": [
+        "profile-architecture-board"
+      ],
+      "acceptance": "The main URL lands on My Profile. Resume intake, fact review, role approval, follow-up questions/preferences and Jobs are accessible in one workspace; old bookmarked routes return to its views. Existing per-version approvals, stale-read protection and privacy controls remain available.",
+      "stage": "profile",
+      "status": "complete",
+      "detail": "The main URL lands on My Profile. Resume intake, fact review, role approval, follow-up questions/preferences and Jobs are accessible in one workspace; old bookmarked routes return to its views. Existing per-version approvals, stale-read protection and privacy controls remain available.",
+      "blockers": [],
+      "evidence": "2026-10-29: 152 existing backend tests and 15 new guided/link/dispatch cases passed. Ten guided workspace-component scenarios passed against synthetic ProfileService persistence; five Scout and eight diagram component regressions passed. One live synthetic Gemini request returned two valid proposed roles. Desktop intake/link/embedded Jobs layout inspected; full real-user/mobile evaluation remains tracked separately.",
+      "notes": [
+        "The user requested a complete frontend simplification while retaining Supabase/Pinecone/Gemini, ownership, evidence and approval boundaries. These are bounded delivered capabilities, not certification of the complete career pipeline."
+      ],
+      "outputLinks": [
+        {
+          "label": "Unified Career Scout workspace",
+          "url": "/"
+        },
+        {
+          "label": "Embedded workflow diagram",
+          "url": "/?view=workflow"
+        }
+      ]
+    },
+    {
+      "id": "builder-jd-link-intake",
+      "owner": "profile-builder",
+      "title": "Read optional JD pages and document links",
+      "dependsOn": [
+        "profile-document-parsers"
+      ],
+      "acceptance": "An authenticated user can save a readable public HTML, PDF, DOCX or TXT JD link, preserving source provenance. Validate public destinations and every redirect, bound bytes/text, reject unreadable/login pages and never convert JD requirements into user facts.",
+      "stage": "profile",
+      "status": "complete",
+      "detail": "An authenticated user can save a readable public HTML, PDF, DOCX or TXT JD link, preserving source provenance. Validate public destinations and every redirect, bound bytes/text, reject unreadable/login pages and never convert JD requirements into user facts.",
+      "blockers": [],
+      "evidence": "2026-10-29: 152 existing backend tests and 15 new guided/link/dispatch cases passed. Ten guided workspace-component scenarios passed against synthetic ProfileService persistence; five Scout and eight diagram component regressions passed. One live synthetic Gemini request returned two valid proposed roles. Desktop intake/link/embedded Jobs layout inspected; full real-user/mobile evaluation remains tracked separately.",
+      "notes": [
+        "The user requested a complete frontend simplification while retaining Supabase/Pinecone/Gemini, ownership, evidence and approval boundaries. These are bounded delivered capabilities, not certification of the complete career pipeline."
+      ],
+      "outputLinks": [
+        {
+          "label": "Unified Career Scout workspace",
+          "url": "/"
+        },
+        {
+          "label": "Embedded workflow diagram",
+          "url": "/?view=workflow"
+        }
+      ]
+    },
+    {
+      "id": "builder-guided-single-jd",
+      "owner": "profile-builder",
+      "title": "Build from a resume with zero or one optional JD",
+      "dependsOn": [
+        "profile-gemini-analysis"
+      ],
+      "acceptance": "The guided builder works from approved facts alone or from 1–15 selected/analyzed optional JDs. Proposals reference approved fact versions, preserve requirement coverage, ask material nonrepeating questions and require separate user role approval. Existing legacy JD-mode validation remains compatible.",
+      "stage": "profile",
+      "status": "complete",
+      "detail": "The guided builder works from approved facts alone or from 1–15 selected/analyzed optional JDs. Proposals reference approved fact versions, preserve requirement coverage, ask material nonrepeating questions and require separate user role approval. Existing legacy JD-mode validation remains compatible.",
+      "blockers": [],
+      "evidence": "2026-10-29: 152 existing backend tests and 15 new guided/link/dispatch cases passed. Ten guided workspace-component scenarios passed against synthetic ProfileService persistence; five Scout and eight diagram component regressions passed. One live synthetic Gemini request returned two valid proposed roles. Desktop intake/link/embedded Jobs layout inspected; full real-user/mobile evaluation remains tracked separately.",
+      "notes": [
+        "The user requested a complete frontend simplification while retaining Supabase/Pinecone/Gemini, ownership, evidence and approval boundaries. These are bounded delivered capabilities, not certification of the complete career pipeline."
+      ],
+      "outputLinks": [
+        {
+          "label": "Unified Career Scout workspace",
+          "url": "/"
+        },
+        {
+          "label": "Embedded workflow diagram",
+          "url": "/?view=workflow"
+        }
+      ]
+    },
+    {
+      "id": "master-guided-intake",
+      "owner": "master",
+      "title": "Master dispatch for guided profile intake and criteria",
+      "dependsOn": [
+        "master-graph",
+        "profile-supabase-migration"
+      ],
+      "acceptance": "Trusted intake operations route User → Master → Profile; Profile alone coordinates Fact/Builder and memory. Persist user goals/search preferences separately from factual claims and return current approved role/search criteria through Master to the existing Scout adapter.",
+      "stage": "profile",
+      "status": "complete",
+      "detail": "Trusted intake operations route User → Master → Profile; Profile alone coordinates Fact/Builder and memory. Persist user goals/search preferences separately from factual claims and return current approved role/search criteria through Master to the existing Scout adapter.",
+      "blockers": [],
+      "evidence": "2026-10-29: 152 existing backend tests and 15 new guided/link/dispatch cases passed. Ten guided workspace-component scenarios passed against synthetic ProfileService persistence; five Scout and eight diagram component regressions passed. One live synthetic Gemini request returned two valid proposed roles. Desktop intake/link/embedded Jobs layout inspected; full real-user/mobile evaluation remains tracked separately.",
+      "notes": [
+        "The user requested a complete frontend simplification while retaining Supabase/Pinecone/Gemini, ownership, evidence and approval boundaries. These are bounded delivered capabilities, not certification of the complete career pipeline."
+      ],
+      "outputLinks": [
+        {
+          "label": "Unified Career Scout workspace",
+          "url": "/"
+        },
+        {
+          "label": "Embedded workflow diagram",
+          "url": "/?view=workflow"
+        }
+      ]
     }
   ],
   "communication": [
@@ -2914,6 +3028,16 @@
       "date": "2026-10-29",
       "title": "Profile resume-only and Master discovery handoff",
       "detail": "152 automated tests and TypeScript passed. Ten actual component scenarios cover the zero-JD build/approval/activation/link path, manual fallback, preserved location and filters, server-bound snapshot selection and late-load cancellation. One live synthetic Gemini request returned three valid proposed roles. Eight approval and eight diagram component regressions also passed. Desktop local layout and Role profiles navigation were visually inspected; local Supabase networking was restricted, so full authenticated onboarding and mobile review remain unverified. No real user approvals, resume model calls or live Keenable searches were performed."
+    },
+    {
+      "date": "2026-10-29",
+      "title": "Profile-first guided redesign: synthetic validation",
+      "detail": "152 existing automated checks plus 11 new guided/link-intake/dispatch checks passed. Ten actual guided workspace scenarios passed for zero-JD intake, private upload, unapproved extraction, approval race/conflict safety, role/follow-up proposals, user goals, explicit snapshot activation and embedded Jobs. One live Gemini request with synthetic approved facts returned two proposed roles; no real user approvals, resume model calls or live Keenable searches were performed. TypeScript/build/hosted/browser release verification are separate release checks."
+    },
+    {
+      "date": "2026-10-29",
+      "title": "Guided workspace: final component and intake checks",
+      "detail": "Ten actual guided workspace scenarios, five actual Scout scenarios and eight diagram SSR/component scenarios passed. Fifteen targeted backend cases cover zero/single-JD role building, HTML/DOCX/PDF links, public DNS/redirect/size checks, Master routing, sequential source analysis, nonrepeating resume-only questions, persisted preferences, durable answers on model failure and atomic snapshot/preferences activation. Desktop landing, optional link toggle and embedded Jobs visually inspected. Mobile/browser automation was interrupted by active user input, so mobile/full real-user onboarding is not claimed."
     }
   ]
 }

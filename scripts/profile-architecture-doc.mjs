@@ -26,7 +26,7 @@ Reviewed ${record.reviewedOn}; record revision ${record.revision}. Generated fro
 \`\`\`mermaid
 ${graph}\`\`\`
 
-Resume-only route: resume → approved facts → proposed roles → role approval → activated snapshot → Profile → Master → Scout → Keenable. JDs are optional; the JD-based builder still takes 10–15 analyzed descriptions. Search preferences remain user-controlled, and discovery does not establish job suitability.
+Resume-only route: resume → approved facts → proposed roles → role approval → activated snapshot → Profile → Master → Scout → Keenable. JDs are optional; the guided builder accepts one optional analyzed JD (legacy JD mode retains 10–15). Search preferences remain user-controlled, and discovery does not establish job suitability.
 
 Gemini provides analysis and embeddings. Supabase remains authoritative; Pinecone is a derived semantic index. Profile's memory interface mediates all storage and vector operations. Children cannot access memory or communicate directly. Model output is a proposal; only the user approves real facts and role profiles. JD requirements are not evidence of user experience.
 

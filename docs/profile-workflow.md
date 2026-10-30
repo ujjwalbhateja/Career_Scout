@@ -113,11 +113,23 @@ legacy OpenAI vectors are never compared with Gemini queries. Existing file path
 and approval records are unchanged. Recorded old/new index locations remain
 available to explicit profile deletion, including both namespaces on one host.
 
+## Unified profile-first workspace
+
+The main URL now lands on My Profile. Five steps keep intake, fact approval, role building, questions/goals and search readiness together. Jobs are embedded in the same workspace. Legacy /profile, /profile/architecture, /workflow and /progress URLs redirect to the corresponding workspace view. Workflow/project diagnostics are secondary, not required product steps. Native cross-page anchors remain the convention; primary workspace navigation uses local React state and same-page query parameters.
+
+Intake passes through dispatchProfileOperation: User → Master → Profile. Resume uploads remain private Supabase originals. Optional JD links use public HTTPS only, validate DNS/destinations and every redirect, cap response bytes, and parse HTML/PDF/DOCX/TXT without forwarding cookies or provider keys. Store source URL and extracted segments; scanned, protected, login and unreadable sources require upload or pasted text. Linked content is untrusted evidence, never instructions.
+
+Prepare analyzes pending resume/answer documents and selected JDs in sequence, preserving each saved run and source. It never approves extracted facts. In guided mode one optional analyzed JD is sufficient; approved resume facts alone remain sufficient without one. Existing legacy mode retains its 10–15-JD contract.
+
+Search goals, location, arrangement, seniority, employment and sponsorship preference are user inputs saved separately from facts. Resume-only Builder may propose a small number of material follow-up questions; answered/declined/disclosure reuse guards also apply without JD requirements. Answers become source documents for factual extraction/review. A saved current approved snapshot and the selected role go through Profile → Master → Scout, along with allowed search preferences. Private factual records and free-form goals are kept out of the Keenable request.
+
+The backend stores, Gemini models/vector isolation, CAS revisions, per-version approvals, invalidation and full downstream career-pipeline boundaries are retained.
+
 ## JD and Builder records
 
 Resume-only building (explicit mode `resume`) uses approved experience, education and skills without JDs. Gemini returns role hypotheses with supporting fact IDs; all references must resolve to approved non-personal facts. Proposals have `basis: resume`, no JD mappings or fabricated requirements, and require separate user role approval and snapshot activation.
 
-Optional JD-based building requires 10–15 distinct selected and analyzed JDs. Later
+The guided workspace accepts 1–15 optional selected and analyzed JDs; its ordinary path needs at most one. The compatible legacy JD mode requires 10–15 distinct selected and analyzed JDs. Later
 application JDs can be added singly without repeating onboarding.
 
 Preserve required/preferred tasks, skills, qualifications, experience, sector,

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./scout.css";
 
 export const metadata: Metadata = {
-  title: "Career Scout — Find your next role",
-  description: "Search live job sources, refine your criteria, and import company career or job links on demand.",
+  title: "Career Scout — Your profile, your next role",
+  description: "Build a profile from your resume, clarify your goals, and find relevant jobs in one guided workspace.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",

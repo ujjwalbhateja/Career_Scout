@@ -31,7 +31,7 @@ const defaults = {
   preferSponsorship:false,includeUnknown:true,searchDescriptions:true,includeUnverified:true,showClosed:false,maxAge:'0',
 };
 type Criteria = typeof defaults;
-type ProfilePlan={selection:{roleId:string;version:string};roleName:string;basis:string;criteria:{roles:string}};
+type ProfilePlan={selection:{roleId:string;version:string};roleName:string;basis:string;criteria:Partial<Criteria>&{roles:string}};
 const labels:Record<string,string> = {any:'Any',intern:'Intern / apprentice',junior:'Entry / junior',mid:'Mid-level',senior:'Senior',lead:'Lead / staff / principal',manager:'Manager',director:'Director / executive',remote:'Remote',hybrid:'Hybrid','on-site':'On-site','full-time':'Full-time','part-time':'Part-time',contract:'Contract / freelance',internship:'Internship'};
 const sponsorLabel = (s:string) => s==='no'?'No sponsorship':s==='yes'?'Sponsorship available':'Sponsorship not stated';
 const verificationLabel = (j:Job) => j.verification?.status==='available'?'Application page available':j.verification?.status==='closed'?'Closed':'Not verified';
@@ -57,7 +57,7 @@ function storedJobs(value:unknown):Job[] {
   return Array.isArray(value)?value.filter(j=>j&&typeof j.id==='string'&&typeof j.title==='string'&&typeof j.company==='string'&&typeof j.description==='string'&&j.salary&&j.sponsorship).slice(0,30):[];
 }
 
-export default function Scout() {
+export default function Scout({embedded=false}:{embedded?:boolean}={}) {
   const [profilePlan,setProfilePlan]=useState<ProfilePlan|null>(null),[profileError,setProfileError]=useState(''),[profileLoading,setProfileLoading]=useState(false);
   const [criteria,setCriteria]=useState<Criteria>(defaults),[ready,setReady]=useState(false),[tab,setTab]=useState('search');
   const [keywordsEdited,setKeywordsEdited]=useState(false),[provider,setProvider]=useState<Provider|null>(null),[providerError,setProviderError]=useState('');
@@ -103,7 +103,7 @@ export default function Scout() {
     fetch('/api/scout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'profilePlan',profileSelection:{roleId,version}}),signal:controller.signal}).then(async response=>{
       const plan=await response.json() as ProfilePlan & {error?:string};if(!response.ok)throw new Error(plan.error||'Could not connect your profile.');
       if(controller.signal.aborted)return;
-      setProfilePlan(plan);setKeywordsEdited(true);setCriteria(current=>({...current,roles:plan.criteria.roles,relatedKeywords:'',mode:'exact'}));
+      setProfilePlan(plan);setKeywordsEdited(true);setCriteria(current=>({...current,...plan.criteria,roles:plan.criteria.roles,relatedKeywords:'',mode:'exact'}));
     }).catch(e=>{if(!controller.signal.aborted)setProfileError(e.message||'Could not connect your profile.');}).finally(()=>{if(!controller.signal.aborted)setProfileLoading(false);});
     return()=>controller.abort();
   },[ready]);
@@ -180,14 +180,14 @@ export default function Scout() {
   const select=(name:keyof Criteria,options:string[])=><select id={name} value={String(criteria[name])} onChange={e=>field(name,e.target.value as never)}>{options.map(o=><option value={o} key={o}>{labels[o]||o}</option>)}</select>;
   const closeDetails=()=>{detailRef.current?.close();setSelected(null);};
 
-  return <div className="app-shell">
-    <header className="topbar">
+  return <div className={'app-shell'+(embedded?' cw-embedded-scout':'')}>
+    {!embedded&&<header className="topbar">
       <a className="brand" href="/" aria-label="Career Scout home"><span className="brand-mark"><Compass size={23}/></span><span>career<span className="brand-light">scout</span></span></a>
       <nav aria-label="Main navigation">{[['search','Discover',0],['import','Import a role',imported.length],['saved','Shortlist',saved.length]].map(([key,title,count])=><button key={key} className={tab===key?'active':''} onClick={()=>setTab(String(key))}>{title}{Number(count)>0&&<span className="nav-count">{count}</span>}</button>)}<a className="progress-link" href="/profile">My profile</a><a className="progress-link" href="/progress">Progress</a></nav>
       <button className="sources-button" onClick={()=>setSourceOpen(!sourceOpen)} aria-expanded={sourceOpen}><Settings2 size={17}/><span>Search coverage</span></button>
-    </header>
-    <main>
-      <section className="intro"><div><div className="eyebrow"><span/> YOUR JOB SEARCH, WITH DIRECTION</div><h1>{tab==='import'?<>Found a role?<br/><em>Bring it here.</em></>:tab==='saved'?<>Good opportunities.<br/><em>All in one place.</em></>:<>Find the roles<br/><em>worth your time.</em></>}</h1><p>{tab==='import'?'Import an individual job or a company career board. Keep its evidence in one place.':tab==='saved'?'Your saved roles, ready to compare and pass to the future resume Matcher.':'Search the web with Keenable. Explore related roles, check the evidence, and build your shortlist.'}</p></div><div className="intro-side"><div className="orbit"><Compass size={70} strokeWidth={1}/><span className="orbit-dot"/></div><span><ShieldCheck size={15}/> Your shortlist is saved in this browser</span></div></section>
+    </header>}
+    <main>{embedded&&<nav className="cw-job-tabs" aria-label="Job collections">{[["search","Discover jobs"],["import","Import a role"],["saved","Shortlist"]].map(([key,title])=><button key={key} aria-current={tab===key?"page":undefined} onClick={()=>setTab(key)}>{title}{key==="saved"&&saved.length>0?" ("+saved.length+")":""}</button>)}<button onClick={()=>setSourceOpen(!sourceOpen)}>Search coverage</button></nav>}
+      {!embedded&&<section className="intro"><div><div className="eyebrow"><span/> YOUR JOB SEARCH, WITH DIRECTION</div><h1>{tab==='import'?<>Found a role?<br/><em>Bring it here.</em></>:tab==='saved'?<>Good opportunities.<br/><em>All in one place.</em></>:<>Find the roles<br/><em>worth your time.</em></>}</h1><p>{tab==='import'?'Import an individual job or a company career board. Keep its evidence in one place.':tab==='saved'?'Your saved roles, ready to compare and pass to the future resume Matcher.':'Search the web with Keenable. Explore related roles, check the evidence, and build your shortlist.'}</p></div><div className="intro-side"><div className="orbit"><Compass size={70} strokeWidth={1}/><span className="orbit-dot"/></div><span><ShieldCheck size={15}/> Your shortlist is saved in this browser</span></div></section>}
       {notice&&<div className="notice" role="status">{notice}<button aria-label="Dismiss notice" onClick={()=>setNotice('')}><X size={16}/></button></div>}
       {(profileLoading||profileError||profilePlan)&&<section className="notice" aria-live="polite"><div>{profileLoading?'Connecting your approved profile through Master…':profileError||('Profile → Master → Scout: '+profilePlan?.roleName+' · '+profilePlan?.selection.version)}{profilePlan&&<p>Review location and filters, then Search. Your resume and contact details are kept out of the Keenable request. Job suitability still needs a separate assessment.</p>}<a href="/profile">Review my profile</a>{' · '}<button type="button" className="text-button" onClick={detachProfile}>Use manual search</button></div></section>}
       {provider?.configured===false&&<div className="error-message" role="alert">Keenable is not connected on this deployment. The site owner needs to configure the server connection.</div>}

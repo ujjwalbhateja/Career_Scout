@@ -1,8 +1,3 @@
-import { requireChatGPTUser } from '@/app/chatgpt-auth';
-import ProfileWorkspace from './workspace';
-import './profile.css';
+import {redirect} from 'next/navigation';
 export const dynamic='force-dynamic';
-export default async function ProfilePage(){
-  await requireChatGPTUser('/profile');
-  return <ProfileWorkspace/>;
-}
+export default function LegacyPage(){redirect('/');}
