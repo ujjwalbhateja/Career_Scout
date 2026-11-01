@@ -1,14 +1,18 @@
 # Career Scout Python agents
 
-This is the new **backend foundation**, not a replacement for the deployed JavaScript service yet. It compiles and runs real LangGraph orchestration with typed, explicitly injected tool adapters. Default adapters are deliberately unbound. No API key, provider request, paid fallback or sample result is used by default.
+The **local application pipeline is connected**. Run `Start-Scout.cmd` at the repository root to start both the Python service and website, then open http://127.0.0.1:5173/ . Resume and optional example-JD intake remain in My Profile with explicit factual decisions and consolidated master-profile saving. Applications prepares and downloads a package from a selected job or bounded discovery. See [the input and usage guide](../docs/pipeline-usage.md).
 
-## Start here
+The service explicitly injects real Gemini, Keenable, current Supabase-profile and local SQLite-package bindings. `adapters.py` reuses a fixed local Node provider bridge; `service.py` supplies the authenticated loopback boundary; `store.py` persists owner-scoped run checkpoints and packages. Credentials remain in the server environment. The default library registry and `check` command remain unbound/offline. Hosted deployment and representative real-user evaluation are separate.
+
+## Original foundation integration notes
+
+These notes describe the dependency-injected library interface. Production bindings now exist in `adapters.py`; use the root launcher for the complete local app rather than binding fixtures or starting only `npm run dev`.
 
 1. Read [the architecture and migration plan](../docs/python-agent-architecture.md).
 2. Edit the ten `src/career_scout/agents/*/prompt.md` files. Each sits beside its `agent.py`.
 3. Inspect `contracts.py` for input/output types and `catalog.py` for registered tools.
-4. Implement and bind the Memory and existing Profile-service adapters first. Keep approvals in authoritative storage.
-5. Connect one provider at a time, validate it, then add the authenticated web-to-Python bridge.
+4. Inspect `adapters.py` and `scripts/agent-provider.mjs` for the real provider bindings. Keep approvals in authoritative Profile storage.
+5. Use the root launcher and the Applications view. Test representative outputs before planning hosted deployment.
 
 ## Layout
 
@@ -78,7 +82,7 @@ registry = create_registry()
 async def load_profile(payload, invocation):
     # Implement this through trusted Profile storage, not an LLM.
     # Check invocation.context.owner_id, payload.version, current revision,
-    # source/fact/role approvals, revocations and evidence before returning.
+    # source/fact approvals, saved search context, revocations and evidence before returning.
     # Return ApprovedProfile or an object matching its schema.
     raise NotImplementedError("Connect the current Profile/Supabase service")
 
@@ -95,9 +99,10 @@ To add a tool: declare its request/result models, create a `ToolSpec` with one o
 ## Status and deployment limits
 
 - Implemented locally: package/lockfile, coordinator graphs, ten agent/prompt packages, eight tool contracts, scoped calls, source-reference checks, human approval stops, shortlist/draft/review/storage gates, bounded revisions and offline regression tests.
-- Pending: real Python provider adapters, durable checkpoints/resume, authenticated service boundary, revision checks immediately before external side effects, deployment/observability and live quality evaluation.
+- Connected locally: real provider bindings, token-authenticated loopback service, website-derived identity, SQLite run journal/completed-tool recovery, cancellation, owner-scoped idempotent packages, final Profile recheck and validated ZIP downloads. A bounded live synthetic preparation and a separate real Scout batch passed.
+- Pending: separately hosted runtime/storage, production authentication, atomic hosted profile-revision checks at write time, daily quotas/scheduling and representative real-user quality evaluation. The remote Profile recheck and local SQLite write are not a cross-database transaction.
 - Fresh intake returns proposed facts and pauses. Persist proposals and obtain user approval in the current Profile service. Invoke again with the approved snapshot version; Memory reloads current approvals. There is no in-memory approval toggle or checkpoint-resume endpoint.
 - Supabase remains authoritative. Pinecone remains a derived semantic index using isolated Gemini embeddings. Neither is replaced by LangGraph's process memory.
-- Google GenAI SDK is the intended Gemini adapter. It is not installed or called in this placeholder-only phase. Existing JS Gemini analysis/embedding calls are untouched.
+- Gemini bindings reuse the existing fixed-endpoint JS Gemini transport through a bounded Node subprocess. No second SDK or model provider is added; the existing embedding path remains optional.
 - Do not expose raw graph state or accept `RunContext` from client JSON. Results may contain private profile content and belong only to the authenticated caller. Do not enable external tracing with private state until redaction/access controls are implemented.
 - Python needs a separate service/runtime. The current Cloudflare/Sites JavaScript deployment does not execute this package. No deployment or GitHub push is implied by a local commit.

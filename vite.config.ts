@@ -52,7 +52,12 @@ export default defineConfig(async ({ command, mode }) => {
   const { cloudflare } = await import("@cloudflare/vite-plugin");
 
   return {
+    // RSC hot reload can transform the bare file as well as its ?raw import.
+    // Classify only editable agent policies as assets so Markdown is never
+    // parsed as JavaScript; ?raw still supplies the complete prompt text.
+    assetsInclude: ["**/backend/src/career_scout/agents/*/prompt.md"],
     server: {
+      fs:{deny:['.env','.env.*','*.{crt,pem}','**/.git/**','**/.local/**','**/research/**']},
       ...(managedLinux
         ? { host: "0.0.0.0", allowedHosts: ["terminal.local"] }
         : {}),
@@ -71,7 +76,7 @@ export default defineConfig(async ({ command, mode }) => {
           ...localBindingConfig,
           ...(command === "serve" ? { vars: Object.fromEntries(
             Object.entries(loadEnv(mode, process.cwd(), "")).filter(([key]) =>
-              ['KEENABLE_API_KEY','SUPABASE_URL','SUPABASE_SECRET_KEY','SUPABASE_SERVICE_ROLE_KEY','PINECONE_API_KEY','PINECONE_INDEX_HOST','PINECONE_INDEX_NAME','GEMINI_API_KEY','PROFILE_SEMANTIC_SEARCH'].includes(key))
+              ['KEENABLE_API_KEY','SUPABASE_URL','SUPABASE_SECRET_KEY','SUPABASE_SERVICE_ROLE_KEY','PINECONE_API_KEY','PINECONE_INDEX_HOST','PINECONE_INDEX_NAME','GEMINI_API_KEY','PROFILE_SEMANTIC_SEARCH','CAREER_AGENT_URL','CAREER_AGENT_TOKEN'].includes(key))
           ) } : {}),
           ...(command === "serve"
             ? {

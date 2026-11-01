@@ -1,18 +1,18 @@
 ﻿# Career Scout
 
-A private, profile-first workspace: add a resume and an optional uploaded/linked JD, review facts, approve supported roles, clarify goals, then open embedded Keenable job discovery. Supabase records/files, Pinecone vectors and Gemini analysis/embeddings retain their existing ownership and approval boundaries. Full real-user model quality and downstream agent validation remain separate gates.
+A private, profile-first workspace: add a resume and an optional uploaded/linked JD, review facts, compare supplied JD requirements, answer material gap questions, save the consolidated master profile, then let Scout retrieve actual web-sourced openings. Supabase records/files, Pinecone vectors and Gemini analysis/embeddings retain their existing ownership and approval boundaries. Full real-user model quality and downstream agent validation remain separate gates.
 
 The main URL lands on My Profile. Jobs, workflow and project status are views in the same workspace. Legacy bookmarked routes redirect to those views. One optional analyzed JD is sufficient in guided mode; no JD is required for resume-only building.
 
-## Python agent backend (local foundation)
+## Python application pipeline (local)
 
-The new [backend package](backend/README.md) contains a production composition entrypoint at `backend/src/career_scout/agent.py`, Master/Profile LangGraph coordinators, ten editable `prompt.md` files, eight typed tool contracts and offline tests. See the [architecture diagram and rollout plan](docs/python-agent-architecture.md). Real Python provider adapters, durable state and the authenticated web bridge remain pending; the deployed JS app and UI continue to operate as before.
+The [backend package](backend/README.md) connects the approved Profile snapshot to real Gemini matching, tailoring, independent Critic checks, bounded Keenable discovery and private local SQLite packages. **Applications** accepts a target JD or a job selected from Jobs, shows progress/recovery, and downloads a validated ZIP. Use the root `Start-Scout.cmd` launcher to run both services. See [where to provide your resume and JDs](docs/pipeline-usage.md). The hosted Site remains a separate deployment; representative real-user model evaluation is still pending.
 
 ## Run locally
 
 Open `C:\Users\ujjwa\job_search` as the project. This folder is both the application root and the Git root; `package.json` and `backend/` are directly inside it. Read the [folder map](docs/repository-layout.md) and [current project context](docs/PROJECT_CONTEXT.md).
 
-On this machine, run `Start-Scout.cmd` from the root; it uses the preserved Node/npm runtimes under `.local/tools/` and works without changing PowerShell execution policy. `Start-Scout.ps1` is also available where scripts are permitted. For a fresh clone, use Node 22.13+ (x64 on Windows ARM), install dependencies with `npm ci`, and run `npm run dev`. Save `KEENABLE_API_KEY` in ignored root `.env.local`; never use a `VITE_` or `NEXT_PUBLIC_` prefix for credentials.
+On this machine, run `Start-Scout.cmd` from the root; it uses the preserved Node runtime under `.local/tools/` and works without changing PowerShell execution policy. `Start-Scout.ps1` is also available where scripts are permitted. For a fresh clone, use Node 22.13+ (x64 on Windows ARM), install web dependencies with `npm ci`, create the backend environment with `uv sync --locked` in `backend/`, and run `node scripts/start-pipeline.mjs` from the root. `npm run dev` starts only the web app. Save server credentials in ignored root `.env.local`; never use a `VITE_` or `NEXT_PUBLIC_` prefix for credentials. See [the full input/setup guide](docs/pipeline-usage.md).
 
 All research, original inputs, private documents, historical analysis scripts and migration records live under ignored `research/`. Runtimes, caches and preserved backups live under ignored `.local/`. Source code, agent prompts, maintained docs, tests and lockfiles remain version-controlled. Neither local-only folder is included in remote pushes.
 

@@ -6,11 +6,12 @@ import {AGENT_IDS,COMMUNICATION_ROUTES,assertCommunication,routingPath,draftFing
 function fixture(){
   const calls=[],saves=[];
   const facts={approvalStatus:'approved',version:'fixture-v1',approvalRef:'fixture-user-approval',evidenceRefs:['fixture-project']};
+  const searchProfile={id:'master-profile',basis:'validated_source_data',approvedFactIds:['fixture-project','fixture-title','fixture-python'],titles:[{term:'Portfolio Analyst',sourceKind:'employment_title',factIds:['fixture-title']}],responsibilities:[{term:'portfolio performance',factIds:['fixture-project']}],skills:[{term:'Python',factIds:['fixture-python']}],industries:[],qualifications:[],functions:[]};
   const job={id:'fixture-job',title:'Portfolio Analyst',company:'Test Employer',applicationUrl:'https://example.com/jobs/fixture',description:'Fixture job description. Analyze investment portfolio performance with Python, supported evidence and clear reporting responsibilities.'};
   const request={packageDate:'2026-10-25',searchRequirements:{roles:'Portfolio Analyst'},profileInput:{existingResume:'Test fixture resume only',profileInformation:{fixture:true},capabilityAnswers:[{evidence:'fixture-project'}],selectedJobDescriptions:Array.from({length:10},(_,index)=>({id:'jd-'+index,text:job.description}))}};
   const handlers={
     fact:async input=>{calls.push({agent:'fact',input});return facts;},
-    profileBuilder:async input=>{calls.push({agent:'builder',input});return [{id:'role-1',roleName:'Portfolio Analyst',approvalRef:'fixture-role-approval',supportedTasks:[{task:'Analyze performance',evidenceRefs:['fixture-project']}]}];},
+    profileBuilder:async input=>{calls.push({agent:'builder',input});return {searchProfile};},
     scout:async input=>{calls.push({agent:'scout',input});return [job];},
     matcher:async input=>{calls.push({agent:'matcher',input});return {selectedJobId:job.id,suitable:true,supported:['Fixture requirement'],gaps:[]};},
     tailor:async input=>{calls.push({agent:'tailor',input});return {jobId:job.id,profileVersion:facts.version,content:'Supported fixture draft '+calls.filter(call=>call.agent==='tailor').length};},
@@ -33,7 +34,8 @@ test('actual LangGraph invokes the nested Profile graph and saves only validated
   for(const event of result.audit)assert.doesNotThrow(()=>assertCommunication(event.from,event.to));
   assert.ok(result.audit.some(event=>event.from==='profile'&&event.to==='fact'));
   assert.ok(!result.audit.some(event=>event.from==='master'&&['fact','profile-builder','memory'].includes(event.to)));
-  assert.deepEqual(Object.keys(f.calls.find(call=>call.agent==='scout').input).sort(),['roleProfiles','searchRequirements']);
+  assert.deepEqual(Object.keys(f.calls.find(call=>call.agent==='scout').input).sort(),['profileVersion','searchContext','searchRequirements']);
+  assert.deepEqual(result.roleProfiles,[]);
 });
 test('Critic revisions are routed through Master, bounded and reviewed again',async()=>{
   const f=fixture(),clean=f.handlers.critic;let reviews=0;
@@ -55,6 +57,11 @@ test('unapproved facts stop before Scout, and JDs alone cannot approve experienc
   const f=fixture();f.handlers.fact=async()=>({verified:false,questions:['Confirm employment dates']});
   const result=await createCareerWorkflow(f.handlers).invoke({request:f.request});
   assert.equal(result.outcome,'needs_input');assert.equal(f.saves.length,0);assert.ok(!f.calls.some(call=>call.agent==='scout'));
+});
+test('a legacy generated-role-only Builder cannot dispatch Scout without a source-backed master profile',async()=>{
+  const f=fixture();f.handlers.profileBuilder=async()=>[{id:'legacy',roleName:'Invented Chief Visionary',approvalRef:'legacy-role-approval',supportedTasks:[]}];
+  const result=await createCareerWorkflow(f.handlers).invoke({request:f.request});
+  assert.equal(result.outcome,'needs_input');assert.ok(!f.calls.some(c=>c.agent==='scout'));assert.deepEqual(result.roleProfiles,[]);
 });
 test('Profile intake enforces 10–15 distinct user-selected JDs before calling agents',async()=>{
   for(const count of [0,9,16]){const f=fixture();f.request.profileInput.selectedJobDescriptions=f.request.profileInput.selectedJobDescriptions.slice(0,count);if(count===16)f.request.profileInput.selectedJobDescriptions=Array.from({length:16},(_,i)=>({id:String(i),text:f.job.description}));await assert.rejects(createCareerWorkflow(f.handlers).invoke({request:f.request}),/10–15/);assert.equal(f.calls.length,0);}

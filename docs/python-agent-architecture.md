@@ -1,5 +1,7 @@
 # Python Master / multi-agent architecture
 
+**2026-10-30 local integration:** The root launcher now runs a token-authenticated loopback Python service and the existing website. Real bindings reuse the JS Gemini/Keenable/Profile providers; local SQLite holds completed-tool checkpoints and validated packages. Applications supports a selected target job or automatic discovery. See [pipeline-usage.md](pipeline-usage.md) and [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) for the current behavior and verification. The foundation/rollout tables below record the original 2026-10-29 baseline; their adapter-pending statements no longer describe local execution. Hosted Python deployment, production atomic writes and representative real-user validation remain pending.
+
 Decision: use the **LangGraph Python SDK**, pinned to 1.2.18, with Pydantic contracts and dependency-injected tools. This is a local backend foundation; hosted version 17 continues to use the existing JS service.
 
 ## Why this SDK

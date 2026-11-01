@@ -16,8 +16,10 @@ function publicFetch(t,handler){const requests=[];t.mock.method(globalThis,'fetc
 test('guided building accepts one analyzed JD, keeps employer requirements separate and preserves explicit approvals',async()=>{
   const s=await fixture();addDocument(s,{id:'jd',kind:'jd',title:'Target role',hash:'jd',selected:true,segments:[{id:'jd.p1',text:'Experience preparing client reports is required.'}]});await addJDAnalysis(s,'jd',{roleName:'Reporting Analyst',requirements:[{category:'task',text:'Prepare client reports',importance:'required',evidence:[{documentId:'jd',segmentId:'jd.p1',quote:'Experience preparing client reports'}]}]});
   const result={profiles:[{...role(s),mappings:s.requirements.map(r=>({requirementId:r.id,factIds:[s.facts[0].id],explanation:'Client reporting evidence'}))}],questions:[]};
-  await assert.rejects(buildProfiles(s,result),/10–15/);await buildProfiles(s,result,'guided');assert.equal(s.roleProfiles[0].basis,'guided');assert.equal(s.roleProfiles[0].status,'proposed');assert.equal(s.facts.length,1);assert.throws(()=>finalize(s,'owner'),/Approve/);approveRole(s,s.roleProfiles[0].id,'owner');finalize(s,'owner');assert.equal(savedPacket(s).roleProfiles[0].jdIds.length,1);
-  s.documents.find(d=>d.id==='jd').selected=false;assert.throws(()=>finalize(s,'owner'),/Approve/);
+  await assert.rejects(buildProfiles(s,result),/10–15/);await buildProfiles(s,result,'guided');assert.equal(s.roleProfiles[0].basis,'guided');assert.equal(s.roleProfiles[0].status,'proposed');assert.equal(s.facts.length,1);
+  const snapshot=finalize(s,'owner');assert.deepEqual(snapshot.profileRefs,[]);assert.equal(savedPacket(s).searchProfile.id,'master-profile');
+  approveRole(s,s.roleProfiles[0].id,'owner');assert.equal(s.roleProfiles[0].status,'approved');assert.equal(savedPacket(s).snapshot.id,snapshot.id,'legacy role history does not gate the saved source-backed profile');
+  s.documents.find(d=>d.id==='jd').selected=false;const next=finalize(s,'owner');assert.notEqual(next.id,snapshot.id);assert.deepEqual(next.reviewScope.documentIds,[]);
 });
 test('resume-only questions work without invented JD requirements and declined questions stay closed',async()=>{
   const s=await fixture(),result={profiles:[role(s)],questions:[{capability:'target industry',scope:'next role',question:'Which industry would you prefer next?',required:true}]};await buildProfiles(s,result,'resume');assert.equal(s.questions.length,1);assert.equal(s.questions[0].requirementId,null);assert.equal(s.questions[0].required,false);await addAnswer(s,{questionId:s.questions[0].id,decision:'declined'});await buildProfiles(s,result,'resume');assert.equal(s.questions.length,1);assert.equal(s.questions[0].status,'declined');
@@ -47,12 +49,13 @@ test('prepare analyzes resume and optional JD in sequence, persists goals and ne
   const result=await svc.action({revision:1,action:'prepare',search:{goals:'Reporting roles',location:'Boston',arrangement:'hybrid'}});assert.equal(calls,2);assert.ok(result.state.documents.every(d=>d.analysis==='complete'));assert.equal(result.state.facts[0].approval,'pending');assert.equal(result.state.preferences.search.location,'Boston');assert.equal(result.state.requirements.length,1);assert.equal(result.state.approvals.length,0);assert.equal(result.state.runs.filter(r=>r.status==='complete').length,2);
 });
 test('saved search preferences reach Scout through Profile-owned memory with no contact or goal-text leakage',async()=>{
-  const s=await fixture();await buildProfiles(s,{profiles:[role(s)]},'resume');approveRole(s,s.roleProfiles[0].id,'owner');finalize(s,'owner');s.preferences.search={location:'Boston',arrangement:'hybrid',goals:'Private career plan',preferSponsorship:true};const svc=memoryService(s);
+  const s=await fixture();await buildProfiles(s,{profiles:[role(s)]},'resume');approveRole(s,s.roleProfiles[0].id,'owner');s.preferences.search={location:'Boston',arrangement:'hybrid',goals:'Private career plan',preferSponsorship:true};finalize(s,'owner');const svc=memoryService(s);
   await dispatchProfileScout(svc,{roleId:s.roleProfiles[0].id,version:s.snapshots[0].version},{},async plan=>{assert.equal(plan.criteria.location,'Boston');assert.equal(plan.criteria.arrangement,'hybrid');assert.equal(plan.criteria.preferSponsorship,true);assert.equal(plan.criteria.goals,undefined);assert.ok(!JSON.stringify(plan).includes('Private career plan'));return [];});
 });
 test('follow-up answer analysis is one operation and preserves the answer if the model fails',async t=>{
   const s=await fixture();await buildProfiles(s,{profiles:[role(s)],questions:[{capability:'reporting scope',scope:'next role',question:'What reporting scope would you prefer?',required:false}]},'resume');const svc=memoryService(s,{GEMINI_API_KEY:'synthetic-key'});t.mock.method(globalThis,'fetch',async()=>Response.json({error:{status:'UNAVAILABLE'}},{status:503}));
-  await assert.rejects(svc.action({revision:1,action:'answer',questionId:s.questions[0].id,decision:'answered',text:'I prefer client reporting and reconciliation work.',analyze:true}));
+  const receipt=await svc.action({revision:1,action:'answer',questionId:s.questions[0].id,decision:'answered',text:'I prefer client reporting and reconciliation work.',analyze:true});
+  assert.equal(receipt.result.kind,'answer_saved');assert.equal(receipt.result.analysisStatus,'failed');
   const saved=await svc.memory.load();assert.equal(saved.state.answers.length,1);assert.equal(saved.state.questions[0].status,'answered');assert.equal(saved.state.facts.length,1);assert.equal(saved.state.facts[0].approval,'approved');assert.equal(saved.state.runs.at(-1).status,'failed');
 });
 test('finalization saves search preferences and approved snapshot atomically with one revision',async()=>{

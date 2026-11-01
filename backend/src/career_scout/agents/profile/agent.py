@@ -30,11 +30,11 @@ def build_graph(tools: ToolSession):
         if phase == "facts":
             return {"next": "end", "status": "needs_fact_approval"}
         if phase == "builder":
-            return {"next": "end", "status": "needs_role_approval"}
+            return {"next": "end", "status": "needs_profile_save"}
         if phase == "memory":
-            if state["profile"].roles:
+            if state["profile"].search_profile is not None:
                 return {"next": "end", "status": "profile_ready"}
-            child = "profile-builder"
+            return {"next": "end", "status": "needs_profile_save"}
         elif state["request"].saved_profile_version:
             child = "memory"
         elif any(source.kind == "resume" for source in state["request"].sources):
@@ -85,7 +85,7 @@ def build_graph(tools: ToolSession):
             not set(role.fact_ids) <= ids for role in result.roles
         ):
             raise WorkflowError(
-                "invalid_evidence", "Roles require unique IDs and approved fact refs"
+                "invalid_evidence", "Profile metadata requires unique IDs and approved fact refs"
             )
         return {
             "phase": "builder",

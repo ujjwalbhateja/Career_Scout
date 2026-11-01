@@ -3,6 +3,7 @@ import { runWithConnectorBinding } from "../lib/connector-context";
 import type { ConnectorBinding } from "../lib/connector-contract.mjs";
 import { runWithSearchEnvironment } from "../lib/search-runtime";
 import { runWithProfileEnvironment, type ProfileEnvironment } from "../lib/profile-runtime";
+import {runWithPipelineEnvironment,type PipelineEnvironment} from "../lib/pipeline-runtime";
 
 export default {
   fetch(request: Request, env: Cloudflare.Env, ctx: ExecutionContext<{ CONNECTORS?: ConnectorBinding }>) {
@@ -27,6 +28,7 @@ export default {
     }
     return runWithSearchEnvironment(env as { KEENABLE_API_KEY?: string }, () =>
       runWithProfileEnvironment(env as ProfileEnvironment, () =>
-        runWithConnectorBinding(binding, () => handler.fetch(request, env, ctx)), work=>ctx.waitUntil(work)));
+        runWithPipelineEnvironment(env as PipelineEnvironment,()=>
+          runWithConnectorBinding(binding, () => handler.fetch(request, env, ctx))), work=>ctx.waitUntil(work)));
   },
 };

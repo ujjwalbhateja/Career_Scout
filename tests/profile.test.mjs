@@ -239,7 +239,7 @@ test('changed onboarding selection cannot finalize old profiles as if new JDs we
   const s=await finalized(),version=savedPacket(s).facts.version;s.documents.find(d=>d.id==='jd0').selected=false;
   addDocument(s,{id:'replacement',kind:'jd',title:'Unanalyzed replacement',hash:'replacement',selected:true,segments:[{id:'replacement.p1',text:'New requirements not yet analyzed.'}]});
   assert.equal(savedPacket(s).facts.version,version); // Existing approved scope stays immutable.
-  assert.throws(()=>finalize(s,'actor'),/Approve at least one/);
+  assert.throws(()=>finalize(s,'actor'),/Analyze each selected job description/);
 });
 test('declined implementation topics are not reopened by common paraphrases',async()=>{
   const s=await withJDs(await approvedState());

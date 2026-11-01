@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
-  "revision": "2026-10-29.14",
-  "reviewedOn": "2026-10-29",
-  "summary": "Career Scout now has a profile-first guided workspace: resume and optional JD intake, fact review, supported role proposals, follow-up questions/search goals and embedded Keenable jobs. Supabase/Pinecone/Gemini and approval boundaries are retained. Full real-user model quality/onboarding and downstream career agents remain separately tracked. Local Python orchestration foundation added alongside the hosted JS app; production adapters, durable execution and the authenticated Python bridge remain pending. No new deployment is implied.",
+  "revision": "2026-11-01.12",
+  "reviewedOn": "2026-11-01",
+  "summary": "The local Profile Builder expands one Factual Profile using separate Professional Work Experience and Skills questionnaires per selected JD. Approve adds the exact statement; Reject adds nothing; Somewhat persists a draft requiring separate approval of revised wording. Existing Fact extraction and factual presentation are unchanged. Approved additions persist through Profile-owned storage, then the existing validated Final Profile save includes them. Local tests and provider availability are separate from user acceptance and hosted publication.",
   "framework": {
     "name": "LangGraph",
     "version": "1.5.2",
-    "mode": "Profile implementation deployed with Gemini; full authenticated workflow validation remains",
-    "note": "Gemini adapters and the structural diagram are deployed. Local synthetic extraction, JD/Builder/assessment and Pinecone retrieval passed, and hosted storage/access checks passed. Configuration and these bounded checks do not establish full real-profile readiness. Python LangGraph 1.2.18 is separately pinned in backend/uv.lock for the local multi-agent foundation; the hosted JavaScript runtime remains unchanged.",
+    "mode": "Hosted JS Profile/discovery plus locally integrated Python application pipeline",
+    "note": "Gemini adapters and the structural diagram are deployed. Local synthetic extraction, JD/Builder/assessment and Pinecone retrieval passed, and hosted storage/access checks passed. Configuration and these bounded checks do not establish full real-profile readiness. Python LangGraph 1.2.18 is separately pinned in backend/uv.lock for the local multi-agent foundation; the hosted JavaScript runtime remains unchanged. 2026-10-30: Python production bindings and an authenticated loopback web bridge now run locally; this does not deploy Python to the hosted Site.",
     "documentation": "https://docs.langchain.com/oss/javascript/langgraph/thinking-in-langgraph"
   },
   "agents": [
@@ -16,7 +16,7 @@
       "title": "Master Agent",
       "kind": "coordinator",
       "description": "Coordinates every top-level agent, owns workflow state and routes every exchange.",
-      "next": "Resume-profile discovery dispatch is implemented; connect remaining production agents and durable workflow state.",
+      "next": "Local pipeline connected. Next: real-user review, hosted Python deployment, production atomic revision guards and durable daily scheduling.",
       "outputs": "Routed tasks, scoped inputs, decisions, revision requests and validated save commands."
     },
     {
@@ -34,7 +34,7 @@
       "kind": "subagent",
       "parent": "profile",
       "description": "Maintains verified personal, contact, employment, education, degree and skills facts.",
-      "next": "Evaluate Gemini extraction against representative source documents and finish individual factual review.",
+      "next": "Local grouped factual records, whole-resume passage accounting and cumulative work claims are implemented; representative real-user extraction/approval and hosted verification remain.",
       "outputs": "Versioned, approved factual profile returned only to Profile Agent."
     },
     {
@@ -43,7 +43,7 @@
       "kind": "subagent",
       "parent": "profile",
       "description": "Proposes roles from approved resume facts, or maps requirements from 10–15 selected JDs; user approval is separate.",
-      "next": "Validate requirement coverage, prior-answer reuse and role profiles against real model output.",
+      "next": "Local whole-profile JD comparison and one Approve / Decline / Somewhat table are implemented; verify representative real-user review and hosted behavior.",
       "outputs": "Role requirements, confirmed supported tasks and separate approved role profiles."
     },
     {
@@ -869,7 +869,7 @@
       "id": "run-recovery",
       "stage": "daily",
       "title": "Run history, recovery and alerts",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Durable run records, limited retries, duplicate-run protection and visible failures.",
       "dependsOn": [
         "scheduler"
@@ -894,9 +894,15 @@
       ],
       "blockers": [],
       "notes": [
-        "Preserved original tracker point. Ownership may change; progress and ownership history remain available."
+        "Preserved original tracker point. Ownership may change; progress and ownership history remain available.",
+        "2026-10-30: Local saved-run listing, resume/cancel, completed-step reuse and idempotent storage are implemented and tested. Daily scheduler/alerts, hosted recovery and provider-level exactly-once semantics remain pending."
       ],
-      "outputLinks": []
+      "outputLinks": [
+        {
+          "label": "Local pipeline guide",
+          "url": "/?view=applications"
+        }
+      ]
     },
     {
       "id": "daily-digest",
@@ -1025,7 +1031,9 @@
       ],
       "notes": [
         "Preserved original tracker point. Ownership may change; progress and ownership history remain available.",
-        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
+        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
+        "2026-10-30 cumulative-profile update: Section 1 now separates factual records and employment stints; Section 2 preserves atomic work claims from the whole resume. Explicit unreviewed source passages block finalization rather than silently completing a partial extraction.",
+        "2026-10-31 Section 1 correction: Section 1 now stages exact source-linked factual fields during resume upload/paste, before the first save and without model availability. A dedicated source-read action repairs older saved resumes without extracting work experience or analyzing JDs."
       ],
       "outputLinks": [
         {
@@ -1082,7 +1090,9 @@
       "notes": [
         "Preserved original tracker point. Ownership may change; progress and ownership history remain available.",
         "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
-        "2026-10-29 approval repair: reload the latest record before a decision; bind the reviewed fact version/fingerprint/prior approval; preserve server revision conflicts; verify saved status before success; ignore lower-revision reads; lock duplicate inputs; poll indexing/foreground state. Direct per-fact approval, explicit batch outcomes and saved decision history added. No existing user decisions were changed. Exact cause of the reported rejection is not established."
+        "2026-10-29 approval repair: reload the latest record before a decision; bind the reviewed fact version/fingerprint/prior approval; preserve server revision conflicts; verify saved status before success; ignore lower-revision reads; lock duplicate inputs; poll indexing/foreground state. Direct per-fact approval, explicit batch outcomes and saved decision history added. No existing user decisions were changed. Exact cause of the reported rejection is not established.",
+        "2026-10-30 cumulative-profile update: The JD table explicitly approves the visible statement or submitted narrower wording in one atomic save. User-answer sources and individual approval receipts establish the new experience; JD passages remain requirements only. Existing user approvals are unchanged by this code update.",
+        "2026-10-31 Section 1 correction: Section 1 repair preserves existing approved fact versions, evidence and approval references. Client receipt validation rejects invented values or automatically approved new fields. No real factual decisions were made on the user's behalf."
       ],
       "outputLinks": [
         {
@@ -1207,7 +1217,7 @@
       "id": "resume-model",
       "stage": "resume",
       "title": "Configure a drafting model",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Choose a separately configured model provider or local model. The Keenable key supplies search only.",
       "dependsOn": [
         "private",
@@ -1236,15 +1246,21 @@
       ],
       "blockers": [],
       "notes": [
-        "Preserved original tracker point. Ownership may change; progress and ownership history remain available."
+        "Preserved original tracker point. Ownership may change; progress and ownership history remain available.",
+        "2026-10-30: Gemini 3.1 Flash-Lite is used through the existing server-side configuration, without OpenAI/paid fallback. Per-run limits/timeouts and bounded revisions are enforced. Durable daily quota and representative model evaluation remain pending."
       ],
-      "outputLinks": []
+      "outputLinks": [
+        {
+          "label": "Local pipeline guide",
+          "url": "/?view=applications"
+        }
+      ]
     },
     {
       "id": "resume-tailor",
       "stage": "resume",
       "title": "Draft a tailored resume",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Select relevant approved achievements, reorder content and use accurate job terminology.",
       "dependsOn": [
         "resume-model",
@@ -1270,15 +1286,21 @@
       ],
       "blockers": [],
       "notes": [
-        "Preserved original tracker point. Ownership may change; progress and ownership history remain available."
+        "Preserved original tracker point. Ownership may change; progress and ownership history remain available.",
+        "2026-10-30: A real Gemini adapter creates a job/profile-bound Markdown/text resume and can revise it from Master-routed feedback. A synthetic live package passed; visible source-to-draft changes, rich document exports and real-user evaluation remain pending."
       ],
-      "outputLinks": []
+      "outputLinks": [
+        {
+          "label": "Local pipeline guide",
+          "url": "/?view=applications"
+        }
+      ]
     },
     {
       "id": "resume-grounding",
       "stage": "resume",
       "title": "Check every resume claim",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Check dates, employers, qualifications, skills, figures and claims against the approved career profile.",
       "dependsOn": [
         "resume-tailor"
@@ -1303,9 +1325,15 @@
       ],
       "blockers": [],
       "notes": [
-        "Preserved original tracker point. Ownership may change; progress and ownership history remain available."
+        "Preserved original tracker point. Ownership may change; progress and ownership history remain available.",
+        "2026-10-30: Critic independently checks approved profile facts and job alignment, tied to the exact draft hash. Negative gates and a positive live synthetic case passed; representative factual-quality evaluation remains pending."
       ],
-      "outputLinks": []
+      "outputLinks": [
+        {
+          "label": "Local pipeline guide",
+          "url": "/?view=applications"
+        }
+      ]
     },
     {
       "id": "resume-parsing",
@@ -1344,7 +1372,7 @@
       "id": "review-queue",
       "stage": "review",
       "title": "Review and approve application packages",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Present the job, fit reasons, gaps, resume draft and highlighted changes for your review.",
       "dependsOn": [
         "resume-parsing",
@@ -1373,9 +1401,15 @@
       ],
       "blockers": [],
       "notes": [
-        "Preserved original tracker point. Ownership may change; progress and ownership history remain available."
+        "Preserved original tracker point. Ownership may change; progress and ownership history remain available.",
+        "2026-10-30: Applications displays job-specific assessments, review issues, draft previews and validated package downloads. Approve/hold/skip workflow and recorded application outcomes remain pending."
       ],
-      "outputLinks": []
+      "outputLinks": [
+        {
+          "label": "Local pipeline guide",
+          "url": "/?view=applications"
+        }
+      ]
     },
     {
       "id": "application-tracker",
@@ -1491,7 +1525,7 @@
       "owner": "master",
       "title": "Durable workflow state",
       "stage": "agent-development",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Persist run identity, checkpoints, job/profile versions and recovery decisions.",
       "dependsOn": [
         "master-graph"
@@ -1500,16 +1534,22 @@
       "blockers": [],
       "notes": [
         "The compiled graph is currently ephemeral. Permanent checkpoint storage remains unimplemented.",
-        "2026-10-29: Python package and synthetic graph tests do not complete this production requirement. See master-python-foundation, master-python-adapters and master-python-service."
+        "2026-10-29: Python package and synthetic graph tests do not complete this production requirement. See master-python-foundation, master-python-adapters and master-python-service.",
+        "2026-10-30: Local SQLite persists run requests, phases, completed-tool checkpoints and idempotent packages. Interrupted work requires explicit resume; Memory is always reloaded. In-flight provider results not yet journaled can be called again. Hosted durable state and cross-store atomic stale-revision gates remain pending."
       ],
-      "outputLinks": []
+      "outputLinks": [
+        {
+          "label": "Local pipeline guide",
+          "url": "/?view=applications"
+        }
+      ]
     },
     {
       "id": "master-routing",
       "owner": "master",
       "title": "Production dispatch and scoped payloads",
       "stage": "agent-development",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Connect real agent adapters, budgets and source/version-aware payload contracts.",
       "dependsOn": [
         "master-graph",
@@ -1520,9 +1560,15 @@
       "notes": [
         "2026-10-29: Optional resume-only intake and bounded Profile → Master → Scout discovery added as separate deliverables. Existing JD intake and full pipeline acceptance are preserved.",
         "2026-10-29: Profile-first guided workspace added with optional single-JD/link support, persisted goals and Master intake. Existing full quality, authenticated onboarding and downstream-pipeline acceptance remain open; do not infer completion from the redesigned controls.",
-        "2026-10-29: Python package and synthetic graph tests do not complete this production requirement. See master-python-foundation, master-python-adapters and master-python-service."
+        "2026-10-29: Python package and synthetic graph tests do not complete this production requirement. See master-python-foundation, master-python-adapters and master-python-service.",
+        "2026-10-30: Applications routes current-profile loading and all downstream specialist exchanges through Python Master. A user-selected target job can bypass discovery; Scout still receives only role/keywords/preferences. Local production bindings validated; hosted full dispatch remains pending."
       ],
-      "outputLinks": []
+      "outputLinks": [
+        {
+          "label": "Local pipeline guide",
+          "url": "/?view=applications"
+        }
+      ]
     },
     {
       "id": "master-revisions",
@@ -1585,7 +1631,10 @@
         "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
-        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
+        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
+        "2026-10-30: Added a deterministic structured consolidated professional profile covering approved resume/questionnaire facts, source-linked professional sections, employment total, role hypotheses, alternative titles, requirement coverage, explicit gaps and preferences. Explicit Build & save persists the artifact in its approved snapshot; it approves no new claims.",
+        "2026-10-30: User clarified that generated roles were not requested. The saved master profile now quotes approved source statements, independent JD mappings and explicit gaps. searchProfile derives exact supported terms/titles from supplied evidence; it excludes all legacy generated summaries, role names and alternative-title metadata.",
+        "2026-10-30 cumulative-profile update: Section 2 grows from exact user-confirmed JD-review statements and approved resume claims. A refreshed requirement comparison precedes the source-backed master-profile save; no generated role approval is required."
       ],
       "outputLinks": [
         {
@@ -1624,7 +1673,9 @@
       "notes": [
         "Detailed permanent storage and retrieval design is explicitly deferred.",
         "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
-        "2026-10-29 approval repair: reload the latest record before a decision; bind the reviewed fact version/fingerprint/prior approval; preserve server revision conflicts; verify saved status before success; ignore lower-revision reads; lock duplicate inputs; poll indexing/foreground state. Direct per-fact approval, explicit batch outcomes and saved decision history added. No existing user decisions were changed. Exact cause of the reported rejection is not established."
+        "2026-10-29 approval repair: reload the latest record before a decision; bind the reviewed fact version/fingerprint/prior approval; preserve server revision conflicts; verify saved status before success; ignore lower-revision reads; lock duplicate inputs; poll indexing/foreground state. Direct per-fact approval, explicit batch outcomes and saved decision history added. No existing user decisions were changed. Exact cause of the reported rejection is not established.",
+        "2026-10-30: Python Profile conversion validates current snapshot, owner-specific fact/role/snapshot approval history and exact surviving evidence. Fixed deletion of never-indexed profiles to avoid calls to unused Pinecone indexes. Live synthetic cleanup passed; hosted deployment is separate.",
+        "2026-10-30 cumulative-profile update: Inline answers, approved fact versions and receipts share a single authoritative revisioned save. Saved source-profile data continues through Profile/Memory to Master and Scout; repeat submissions do not duplicate facts or approval history."
       ],
       "outputLinks": [
         {
@@ -1660,7 +1711,10 @@
         "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
-        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
+        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
+        "2026-10-30: Structured source-linked personal fields and explicit Missing / Not Provided markers are now shown. The current Fact prompt is used for extraction; no missing values are invented.",
+        "2026-10-30 cumulative-profile update: Grouped Section 1 cells expose exact source quotes, fact versions and approval references. Source-context inferences remain labelled for review rather than inheriting an unrelated approval.",
+        "2026-10-31 Section 1 correction: Literal contact-header parsing recovers name, email and phone even when they share one paragraph. An unstated address remains missing; employer location is never substituted for it."
       ],
       "outputLinks": [
         {
@@ -1696,7 +1750,10 @@
         "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
-        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
+        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
+        "2026-10-30: Employment stints are retained independently; source-matched date calculations union overlapping periods. Ambiguous, missing or conflicting dates block an accurate total; ongoing work needs an explicit review date. Approval and date precision are labeled.",
+        "2026-10-30 cumulative-profile update: Legacy whole-sentence role/date facts project into distinct employment stints without rewriting approved versions. Source-supported titles and context status are visible; date totals union overlapping intervals and preserve source precision.",
+        "2026-10-31 Section 1 correction: Section 1 handles shared employer/location headers, mixed employer-role lines, abbreviated month/two-digit-year dates and Pres. Source dates remain literal; no century or tenure is inferred. Separate employment stints remain distinct."
       ],
       "outputLinks": [
         {
@@ -1732,7 +1789,10 @@
         "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
-        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
+        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
+        "2026-10-30: Structured education, certification and explicit skill categories now show source and approval status; missing fields remain explicit. Extraction uses the current Fact policy.",
+        "2026-10-30 cumulative-profile update: Section 1 shows qualifications, institutions, dates, certification and listed-skill records with explicit missing values and provenance. A declared skill does not establish a project or credential.",
+        "2026-10-31 Section 1 correction: Section 1 maps institution, qualification, source dates and location to separate factual fields. Explicitly listed programming-language names and tools are organized without inventing proficiency, employer usage or certification."
       ],
       "outputLinks": [
         {
@@ -1770,7 +1830,10 @@
         "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
-        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
+        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
+        "2026-10-30: Fact extraction receives current approved professional claims for semantic consistency. New conflicts preserve approvals/history while excluding unresolved claims from active use. Re-reading a resume is an explicit UI action.",
+        "2026-10-30 cumulative-profile update: The updated Fact policy and runtime request every distinct responsibility, deliverable, client activity and achievement. Passage accounting distinguishes linked facts, reviewed no-claim paragraphs and work needing extraction review. Source-linked counts do not guarantee complete semantic extraction.",
+        "2026-10-31 Section 1 correction: The literal Section 1 reader runs through Profile-to-Fact coordination and saves only pending canonical factual proposals. Source-bound parser receipts support zero-write reruns; migrations supersede only obsolete unapproved parser proposals and preserve approval history."
       ],
       "outputLinks": [
         {
@@ -1809,7 +1872,9 @@
         "A tested intake boundary exists in the workflow foundation; a real intake UI and persistence are not yet built.",
         "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
         "2026-10-29: Optional resume-only intake and bounded Profile → Master → Scout discovery added as separate deliverables. Existing JD intake and full pipeline acceptance are preserved.",
-        "2026-10-29: Profile-first guided workspace added with optional single-JD/link support, persisted goals and Master intake. Existing full quality, authenticated onboarding and downstream-pipeline acceptance remain open; do not infer completion from the redesigned controls."
+        "2026-10-29: Profile-first guided workspace added with optional single-JD/link support, persisted goals and Master intake. Existing full quality, authenticated onboarding and downstream-pipeline acceptance remain open; do not infer completion from the redesigned controls.",
+        "2026-10-30: Local guided intake supports selecting multiple JD files at once. One explicit Builder action analyzes all pending selected JDs before comparing current approved facts.",
+        "2026-10-30 cumulative-profile update: Primary employer JD filtering excludes portal AI summaries, recommendations, similar jobs and navigation. Reanalysis archives prior requirement records and retains their history."
       ],
       "outputLinks": [
         {
@@ -1849,7 +1914,11 @@
         "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
-        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
+        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
+        "2026-10-30: Local Profile Builder now consumes its editable prompt. All selected JD requirements are accounted for; omitted role-group mappings get a bounded, schema-complete evidence assessment. Unassessed cases remain explicit rather than fabricated support.",
+        "2026-10-30: All selected JDs are analyzed using the current Builder prompt. Complete requirement coverage and prior-answer reuse remain enforced; employment totals supplied to Builder use approved source facts only.",
+        "2026-10-30: Profile Builder directly compares every selected JD requirement with approved facts in bounded complete assessment batches. Independent mappings and targeted questions are stored without generating role objects or vacancies; the current prompt file is included in each model request.",
+        "2026-10-30 cumulative-profile update: Comparison uses the full approved facts and cumulative experience bank. Exact missing-scope metadata preserves partial support; compound claims, shared qualifiers and OR alternatives remain explicit."
       ],
       "outputLinks": [
         {
@@ -1885,7 +1954,12 @@
         "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
-        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
+        "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
+        "2026-10-30: Material unsupported requirements generate grouped gap questions even when the model omits them. Yes requires the user?s own example and subsequent fact approval. No records a gap without creating experience. Prior answers and approved evidence prevent repeated questions.",
+        "2026-10-30: Questionnaire saving is independent of Fact extraction. Bare Yes saves as needs_details; short substantive answers create a saved source. Failed extraction can be retried without duplicate answers. No does not create experience; contradictions with earlier approved answer facts invalidate dependent use pending explicit review.",
+        "2026-10-30: Latest saved answers expose their extraction and approval status in step 5. Pending affirmative details, unextracted answers, pending answer facts and conflicts block complete saving with explicit next actions. No/defer/decline remain recorded gaps.",
+        "2026-10-30: Approved answers update requirement comparison and the master profile. Pending extraction, unapproved answer facts, conflicts and outdated real JD assessments remain explicit gates; generated-role rebuilding/approval is no longer a gate.",
+        "2026-10-30 cumulative-profile update: One table supplies Approve / Decline / Somewhat with inline editing. Approved statements save directly as user-confirmed facts; declines and partial history persist across later JDs. Content-bound replay, per-row source passages, atomic rollback, stale proposal guards and explicit decline reopening are tested."
       ],
       "outputLinks": [
         {
@@ -1913,22 +1987,27 @@
     {
       "id": "builder-profiles",
       "owner": "profile-builder",
-      "title": "Build multiple approved role profiles",
+      "title": "Save the source-backed professional profile",
       "stage": "agent-development",
       "status": "in_progress",
-      "detail": "Build separate suitable profiles such as Data Scientist, Data Analyst, ML Engineer or AI Engineer.",
+      "detail": "Consolidate validated professional information, requirement assessments and supported search metadata before discovery.",
       "dependsOn": [
         "builder-confirmation",
         "fact-records"
       ],
-      "acceptance": "Return approved profiles to Profile Agent with supported tasks, evidence, gaps and approval references.",
+      "acceptance": "Return a versioned consolidated profile through Profile with exact factual approvals, sources, independent requirement mappings and explicit gaps; no generated-role approval prerequisite.",
       "blockers": [
         "Verify hosted Gemini configuration and representative extraction, review, reuse and retrieval workflows."
       ],
       "notes": [
         "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
         "2026-10-29: Optional resume-only intake and bounded Profile → Master → Scout discovery added as separate deliverables. Existing JD intake and full pipeline acceptance are preserved.",
-        "2026-10-29: Profile-first guided workspace added with optional single-JD/link support, persisted goals and Master intake. Existing full quality, authenticated onboarding and downstream-pipeline acceptance remain open; do not infer completion from the redesigned controls."
+        "2026-10-29: Profile-first guided workspace added with optional single-JD/link support, persisted goals and Master intake. Existing full quality, authenticated onboarding and downstream-pipeline acceptance remain open; do not infer completion from the redesigned controls.",
+        "2026-10-30: JD analysis/coverage and missing-experience questions are visible in the workspace. Unsupported proposals remain reviewable but cannot be approved without fact refs. Current review/proposal identities and per-version fact approvals are retained.",
+        "2026-10-30: Role eligibility and proposals use approved facts with requirement mappings; conflicting answer facts cannot support current roles/snapshots until reviewed. Individual approvals remain explicit.",
+        "2026-10-30: Role analysis captures its approved-fact and questionnaire basis. Changed inputs require rebuilding and role approval before consolidation. Both role modes retain bounded related employer titles, without deriving experience from JDs or past titles alone.",
+        "2026-10-30: User clarified the intended output is the validated consolidated master profile before discovery, not generated role cards. The active UI/service no longer generate or require approval of hypothetical roles. Existing history is preserved and excluded from authoritative search metadata.",
+        "2026-10-30 cumulative-profile update: Consolidated preview/save includes both profile sections, source/approval references, unresolved requirements and source-only search metadata. Raw unrepresented resume passages stay in extraction review rather than the saved master-profile payload."
       ],
       "outputLinks": [
         {
@@ -1947,6 +2026,15 @@
           "date": "2026-10-29",
           "reason": "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
         }
+      ],
+      "definitionHistory": [
+        {
+          "date": "2026-10-30",
+          "title": "Build multiple approved role profiles",
+          "detail": "Build separate suitable profiles such as Data Scientist, Data Analyst, ML Engineer or AI Engineer.",
+          "acceptance": "Return approved profiles to Profile Agent with supported tasks, evidence, gaps and approval references.",
+          "reason": "User explicitly corrected the workflow: source-backed consolidation before actual Scout web discovery."
+        }
       ]
     },
     {
@@ -1954,54 +2042,121 @@
       "owner": "scout",
       "title": "Receive role profiles through Master",
       "stage": "agent-development",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Use approved role profiles and search requirements supplied by Master.",
       "dependsOn": [
         "master-routing",
         "profile-consolidation"
       ],
       "acceptance": "Scout requests missing Builder information through Master → Profile → Builder and receives the reply through the reverse route.",
-      "blockers": [],
-      "notes": [],
-      "outputLinks": []
+      "blockers": [
+        "Representative real-profile discovery and hosted activation remain to be evaluated."
+      ],
+      "notes": [
+        "2026-10-30: Master forwards a Profile-derived, source-checked professional search context and owner-scoped seen history. Contacts, raw resumes and unsupported model keywords are excluded. The current Scout prompt prioritizes only exact source candidates.",
+        "2026-10-30: Visible handoff summaries show target/alternative titles, approved responsibilities, industries, specialist skills, qualifications, gaps, preferences and source counts including approved questionnaire facts. A read-only preview performs no search/model call; actual dispatch receipts are owner/version scoped.",
+        "2026-10-30: Source-backed employment and selected-JD title evidence is retained separately from professional fact terms. Missing titles/functions do not get invented labels in provider queries. Titleless research uses supported responsibilities/industry and skills only."
+      ],
+      "outputLinks": [
+        {
+          "label": "Agent workflow",
+          "url": "/workflow"
+        }
+      ],
+      "statusHistory": [
+        {
+          "status": "not_started",
+          "date": "2026-10-25",
+          "reason": "Previous reviewed release."
+        },
+        {
+          "status": "in_progress",
+          "date": "2026-10-30",
+          "reason": "Master forwards a Profile-derived, source-checked professional search context and owner-scoped seen history. Contacts, raw resumes and unsupported model keywords are excluded. The current Scout prompt prioritizes only exact source candidates."
+        }
+      ]
     },
     {
       "id": "scout-job-packet",
       "owner": "scout",
       "title": "Collect full structured job packets",
       "stage": "agent-development",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Collect title/company, full JD, application link, required skills/qualifications/experience and sector information.",
       "dependsOn": [
         "scout-master-input",
         "verification"
       ],
       "acceptance": "Preserve source evidence and return structured shortlists to Master; do not treat a short search excerpt as a full JD.",
-      "blockers": [],
-      "notes": [],
-      "outputLinks": []
+      "blockers": [
+        "Representative real-profile discovery and hosted activation remain to be evaluated."
+      ],
+      "notes": [
+        "2026-10-30: Bounded three-route discovery searches seven days first, expanding to thirty only when needed, with at most six provider searches and ten page verifications. Original posting dates, official deadlines/extensions, unknowns and evidence-based groups are retained. Broader representative live quality remains open."
+      ],
+      "outputLinks": [
+        {
+          "label": "Agent workflow",
+          "url": "/workflow"
+        }
+      ],
+      "statusHistory": [
+        {
+          "status": "not_started",
+          "date": "2026-10-25",
+          "reason": "Previous reviewed release."
+        },
+        {
+          "status": "in_progress",
+          "date": "2026-10-30",
+          "reason": "Bounded three-route discovery searches seven days first, expanding to thirty only when needed, with at most six provider searches and ten page verifications. Original posting dates, official deadlines/extensions, unknowns and evidence-based groups are retained. Broader representative live quality remains open."
+        }
+      ]
     },
     {
       "id": "scout-shortlist-return",
       "owner": "scout",
       "title": "Return shortlisted jobs to Master",
       "stage": "agent-development",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Produce versioned shortlisted job IDs and source snapshots for downstream matching.",
       "dependsOn": [
         "scout-job-packet"
       ],
       "acceptance": "Master can associate each downstream assessment/resume with exactly one shortlisted job.",
-      "blockers": [],
-      "notes": [],
-      "outputLinks": []
+      "blockers": [
+        "Representative real-profile discovery and hosted activation remain to be evaluated."
+      ],
+      "notes": [
+        "2026-10-30: Website and Python adapters share owner-scoped duplicate/update/reopening history and metadata. Unchanged vacancies are suppressed; final vacancy-specific eligibility remains with Matcher. Local contract tests passed; hosted activation remains separate.",
+        "2026-10-30: Search results carry the matching profile/handoff receipt; dispatch, completion and failure update one persisted receipt. A persistence acknowledgment must match the receipt ID/profile version before the UI reports it saved.",
+        "2026-10-30: Retrieved cards come from Keenable job packets and preserve source/application evidence. A bounded live source-fixture check returned three valid actual vacancy packets; no model-generated jobs were used."
+      ],
+      "outputLinks": [
+        {
+          "label": "Agent workflow",
+          "url": "/workflow"
+        }
+      ],
+      "statusHistory": [
+        {
+          "status": "not_started",
+          "date": "2026-10-25",
+          "reason": "Previous reviewed release."
+        },
+        {
+          "status": "in_progress",
+          "date": "2026-10-30",
+          "reason": "Website and Python adapters share owner-scoped duplicate/update/reopening history and metadata. Unchanged vacancies are suppressed; final vacancy-specific eligibility remains with Matcher. Local contract tests passed; hosted activation remains separate."
+        }
+      ]
     },
     {
       "id": "matcher-inputs",
       "owner": "matcher",
       "title": "Receive facts, profiles and jobs from Master",
       "stage": "agent-development",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Receive verified facts, approved role profiles and complete shortlisted JDs.",
       "dependsOn": [
         "master-routing",
@@ -2010,60 +2165,88 @@
       ],
       "acceptance": "Validate source/version identities and reject missing or inconsistent inputs.",
       "blockers": [],
-      "notes": [],
-      "outputLinks": []
+      "notes": [
+        "2026-10-30: Real local matching validates approved profile/job identity and shortlist selection; selected-job and stale-profile cases are tested. Hosted integration remains pending."
+      ],
+      "outputLinks": [
+        {
+          "label": "Local pipeline guide",
+          "url": "/?view=applications"
+        }
+      ]
     },
     {
       "id": "matcher-assessment",
       "owner": "matcher",
       "title": "Explain suitability and gaps",
       "stage": "agent-development",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Compare job requirements with the user’s evidence and identify suitable opportunities.",
       "dependsOn": [
         "matcher-inputs"
       ],
       "acceptance": "Explain supported, unmet and unknown qualifications, responsibilities, experience and sector alignment.",
       "blockers": [],
-      "notes": [],
-      "outputLinks": []
+      "notes": [
+        "2026-10-30: Gemini returns suitability and supported/gap/unknown explanations. Live synthetic matching passed. A structured per-requirement evidence matrix and representative matching evaluation remain pending."
+      ],
+      "outputLinks": [
+        {
+          "label": "Local pipeline guide",
+          "url": "/?view=applications"
+        }
+      ]
     },
     {
       "id": "matcher-return",
       "owner": "matcher",
       "title": "Return match assessments to Master",
       "stage": "agent-development",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Return chosen job IDs with supporting evidence and qualification gaps.",
       "dependsOn": [
         "matcher-assessment"
       ],
       "acceptance": "Never select an unknown job or claim a universal ATS/hiring probability.",
       "blockers": [],
-      "notes": [],
-      "outputLinks": []
+      "notes": [
+        "2026-10-30: Master validates returned selection against the shortlist and holds unsuitable jobs. Real local adapter and negative cases passed; hosted release remains pending."
+      ],
+      "outputLinks": [
+        {
+          "label": "Local pipeline guide",
+          "url": "/?view=applications"
+        }
+      ]
     },
     {
       "id": "tailor-configuration",
       "owner": "tailor",
       "title": "Configure resume structure and formatting",
       "stage": "agent-development",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Choose document structure and formatting appropriate to readable application resumes.",
       "dependsOn": [
         "master-routing"
       ],
       "acceptance": "Preserve contact details and factual fields and retain readable document structure.",
       "blockers": [],
-      "notes": [],
-      "outputLinks": []
+      "notes": [
+        "2026-10-30: The adapter produces readable Markdown/text from approved facts, including approved contact facts when available. PDF/DOCX formatting and representative layout/ATS validation remain pending."
+      ],
+      "outputLinks": [
+        {
+          "label": "Local pipeline guide",
+          "url": "/?view=applications"
+        }
+      ]
     },
     {
       "id": "tailor-draft",
       "owner": "tailor",
       "title": "Draft a job-specific resume",
       "stage": "agent-development",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Use the selected JD, existing resume, verified facts and relevant supported experience supplied by Master.",
       "dependsOn": [
         "tailor-configuration",
@@ -2071,23 +2254,37 @@
       ],
       "acceptance": "Highlight relevant supported skills and adapt wording to company/sector while preserving facts and the meaning of actual experience.",
       "blockers": [],
-      "notes": [],
-      "outputLinks": []
+      "notes": [
+        "2026-10-30: The real Gemini adapter creates a resume for the exact selected job/profile, using editable Tailor instructions. Synthetic live generation passed; real-user quality review remains pending."
+      ],
+      "outputLinks": [
+        {
+          "label": "Local pipeline guide",
+          "url": "/?view=applications"
+        }
+      ]
     },
     {
       "id": "tailor-claim-check",
       "owner": "tailor",
       "title": "Check draft claims against supplied evidence",
       "stage": "agent-development",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Check every claim, qualification, date, employer, responsibility and experience statement.",
       "dependsOn": [
         "tailor-draft"
       ],
       "acceptance": "Flag missing evidence instead of inventing claims or changing factual fields.",
       "blockers": [],
-      "notes": [],
-      "outputLinks": []
+      "notes": [
+        "2026-10-30: Tailor instructions prohibit unsupported claims and Critic validates independently before storage. Comprehensive claim-level evidence mapping and representative evaluation remain pending."
+      ],
+      "outputLinks": [
+        {
+          "label": "Local pipeline guide",
+          "url": "/?view=applications"
+        }
+      ]
     },
     {
       "id": "tailor-readability",
@@ -2109,7 +2306,7 @@
       "owner": "tailor",
       "title": "Respond to Master-routed revisions",
       "stage": "agent-development",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Receive Critic feedback only through Master and return a revised draft to Master.",
       "dependsOn": [
         "tailor-readability",
@@ -2117,15 +2314,22 @@
       ],
       "acceptance": "Each revision gets a new fingerprint and must be reviewed again before saving.",
       "blockers": [],
-      "notes": [],
-      "outputLinks": []
+      "notes": [
+        "2026-10-30: Real Tailor receives previous draft and Master-routed issues; graph hashes and rechecks every revision within its limit. Offline revision gates passed. Broader live revision evaluation remains pending."
+      ],
+      "outputLinks": [
+        {
+          "label": "Local pipeline guide",
+          "url": "/?view=applications"
+        }
+      ]
     },
     {
       "id": "critic-facts",
       "owner": "critic",
       "title": "Review profile facts separately",
       "stage": "agent-development",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Check contact details, company names, employment dates, universities, education dates and degrees.",
       "dependsOn": [
         "master-routing",
@@ -2133,15 +2337,22 @@
       ],
       "acceptance": "Return a distinct profile-facts result with discrepancies and missing evidence.",
       "blockers": [],
-      "notes": [],
-      "outputLinks": []
+      "notes": [
+        "2026-10-30: Independent Gemini factual review receives approved profile facts and current draft; it does not receive the JD. Synthetic live review and offline rejection gates passed; representative quality review remains pending."
+      ],
+      "outputLinks": [
+        {
+          "label": "Local pipeline guide",
+          "url": "/?view=applications"
+        }
+      ]
     },
     {
       "id": "critic-alignment",
       "owner": "critic",
       "title": "Review experience and job alignment",
       "stage": "agent-development",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Check supported skills, tasks, years of experience, sector relevance and job-requirement coverage.",
       "dependsOn": [
         "master-routing",
@@ -2150,15 +2361,22 @@
       ],
       "acceptance": "Return a separate alignment result; distinguish unsupported claims from qualification gaps.",
       "blockers": [],
-      "notes": [],
-      "outputLinks": []
+      "notes": [
+        "2026-10-30: A separate Gemini review checks job alignment without converting employer requirements into experience. Synthetic live review passed; representative evaluation remains pending."
+      ],
+      "outputLinks": [
+        {
+          "label": "Local pipeline guide",
+          "url": "/?view=applications"
+        }
+      ]
     },
     {
       "id": "critic-feedback",
       "owner": "critic",
       "title": "Return validation feedback through Master",
       "stage": "agent-development",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Receive job information, drafts and facts only through Master. Flag unsupported claims and unresolved issues.",
       "dependsOn": [
         "critic-facts",
@@ -2166,8 +2384,15 @@
       ],
       "acceptance": "Bind both review results to the exact job, profile version and draft fingerprint; send all revisions through Master.",
       "blockers": [],
-      "notes": [],
-      "outputLinks": []
+      "notes": [
+        "2026-10-30: Both checks are bound by code to job, profile version and exact draft hash; feedback returns through Master. Offline negative cases and the positive synthetic live package passed. Hosted integration remains pending."
+      ],
+      "outputLinks": [
+        {
+          "label": "Local pipeline guide",
+          "url": "/?view=applications"
+        }
+      ]
     },
     {
       "id": "memory-design",
@@ -2269,7 +2494,7 @@
       "owner": "application-storage",
       "title": "Organize daily application folders",
       "stage": "agent-development",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Save packages under the user-local date with a stable company/role/job identity.",
       "dependsOn": [
         "package-gate",
@@ -2278,16 +2503,22 @@
       "acceptance": "Create organized daily storage without overwriting another job or version.",
       "blockers": [],
       "notes": [
-        "A dated package manifest contract exists; durable folders/storage are not implemented."
+        "A dated package manifest contract exists; durable folders/storage are not implemented.",
+        "2026-10-30: Owner/run-scoped local SQLite stores distinct package versions; ZIP downloads use the user-local package date. Hosted package storage and daily directory UX remain pending."
       ],
-      "outputLinks": []
+      "outputLinks": [
+        {
+          "label": "Local pipeline guide",
+          "url": "/?view=applications"
+        }
+      ]
     },
     {
       "id": "package-contents",
       "owner": "application-storage",
       "title": "Save the complete job application package",
       "stage": "agent-development",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Include title/company, application link, full JD, match assessment, tailored resume, validation results and unresolved issues.",
       "dependsOn": [
         "package-folders",
@@ -2295,23 +2526,37 @@
       ],
       "acceptance": "Every required output is stored and linked in a manifest; failed packages remain held rather than Ready to Apply.",
       "blockers": [],
-      "notes": [],
-      "outputLinks": []
+      "notes": [
+        "2026-10-30: The stored package downloads eight outputs: job JSON, full JD, application link, match assessment, Markdown/text resume, validation and manifest. A live synthetic ZIP passed; hosted storage remains pending."
+      ],
+      "outputLinks": [
+        {
+          "label": "Local pipeline guide",
+          "url": "/?view=applications"
+        }
+      ]
     },
     {
       "id": "package-association",
       "owner": "application-storage",
       "title": "Preserve job-to-resume association",
       "stage": "agent-development",
-      "status": "not_started",
+      "status": "in_progress",
       "detail": "Keep each saved resume clearly associated with the correct job, profile version and validation.",
       "dependsOn": [
         "package-contents"
       ],
       "acceptance": "Verify the persisted resume fingerprint and exact job link and preserve versions for user review.",
       "blockers": [],
-      "notes": [],
-      "outputLinks": []
+      "notes": [
+        "2026-10-30: Storage rechecks job/profile identity and the reviewed draft hash, deduplicates owner/idempotency key and requires a durable matching receipt. Replay/archive/isolation tests passed. Hosted atomic revision protection remains pending."
+      ],
+      "outputLinks": [
+        {
+          "label": "Local pipeline guide",
+          "url": "/?view=applications"
+        }
+      ]
     },
     {
       "id": "profile-document-parsers",
@@ -2374,7 +2619,10 @@
       "blockers": [],
       "notes": [
         "Added with the user-approved Profile workflow; source implementation and operational activation are tracked separately.",
-        "2026-10-29: Optional resume-only intake and bounded Profile → Master → Scout discovery added as separate deliverables. Existing JD intake and full pipeline acceptance are preserved."
+        "2026-10-29: Optional resume-only intake and bounded Profile → Master → Scout discovery added as separate deliverables. Existing JD intake and full pipeline acceptance are preserved.",
+        "2026-10-30: Saved snapshots now bind approved fact/role versions, latest questionnaire decisions, requirement/question scope, search preferences and disclosure preferences. Omitted new facts, pending answers and outdated roles cannot silently reuse an older profile.",
+        "2026-10-30: Canonical object-key comparisons now tolerate Supabase JSONB ordering while preserving array order. Existing fingerprint strings stay compatible. A live disposable storage check confirmed unchanged profile bindings, saved answer evidence in both loaders, read-only Master preview and same-ID handoff completion.",
+        "2026-10-30: Snapshots bind exact facts, answers, selected JD source metadata, independent assessments, preferences and validated source-only search metadata. Legacy role proposals cannot become search evidence or affect an otherwise unchanged source-backed save."
       ],
       "outputLinks": [
         {
@@ -2507,7 +2755,8 @@
         "Added with the user-approved Profile workflow; source implementation and operational activation are tracked separately.",
         "2026-10-29: User ran the initial SQL migration. Live synthetic checks passed private upload/download, public-access denial, direct-table/RPC restrictions and approval persistence. Stale writes surfaced a service failure; tested PT409 correction prepared for SQL Editor.",
         "2026-10-29: Corrected migration 2026-10-29.2 verified live. All 12 synthetic checks passed: private storage, persisted approval, denied direct/public/anonymous access, owner isolation, immediate HTTP 409 conflicts and content cleanup. No personal resume or model calls used.",
-        "2026-10-29: User-reported hosted GET /api/profile failure reproduced under workerd before any upstream call. Replaced unsupported fetch redirect:error with manual redirect handling and explicit redirect rejection; actual-runtime tests cover provider transport and redirect credential protection. Added metadata-only hosted connection probe."
+        "2026-10-29: User-reported hosted GET /api/profile failure reproduced under workerd before any upstream call. Replaced unsupported fetch redirect:error with manual redirect handling and explicit redirect rejection; actual-runtime tests cover provider transport and redirect credential protection. Added metadata-only hosted connection probe.",
+        "2026-10-30: Python Profile conversion validates current snapshot, owner-specific fact/role/snapshot approval history and exact surviving evidence. Fixed deletion of never-indexed profiles to avoid calls to unused Pinecone indexes. Live synthetic cleanup passed; hosted deployment is separate."
       ],
       "outputLinks": [
         {
@@ -2702,18 +2951,19 @@
     {
       "id": "builder-resume-only",
       "owner": "profile-builder",
-      "title": "Resume-only role building without JD intake",
+      "title": "Consolidate approved resume facts without JDs",
       "dependsOn": [
         "profile-gemini-analysis"
       ],
-      "acceptance": "An explicit resume mode uses only approved non-personal facts, validates supporting references, proposes roles without JD requirements, requires separate role approval and permits snapshot activation. Existing JD mode remains available.",
+      "acceptance": "Save approved professional facts with zero generated roles; preserve missing source titles explicitly and permit supported responsibility/skill discovery.",
       "stage": "profile",
       "status": "complete",
-      "detail": "An explicit resume mode uses only approved non-personal facts, validates supporting references, proposes roles without JD requirements, requires separate role approval and permits snapshot activation. Existing JD mode remains available.",
+      "detail": "Optional JDs are not required to save a source-backed master profile.",
       "blockers": [],
       "notes": [
         "2026-10-29: Implementation added; synthetic regression checks and release verification in progress. Full authenticated browser onboarding remains tracked separately.",
-        "Bounded implementation and synthetic validation complete. Actual user role review, activation and hosted job search remain user onboarding steps; full browser/mobile and representative quality remain tracked separately."
+        "Bounded implementation and synthetic validation complete. Actual user role review, activation and hosted job search remain user onboarding steps; full browser/mobile and representative quality remain tracked separately.",
+        "2026-10-30: Resume-only source data can save a consolidated master profile with zero generated roles or role approvals. Missing job titles remain marked missing; supported responsibility/skill discovery remains available."
       ],
       "outputLinks": [
         {
@@ -2729,26 +2979,37 @@
           "url": "/profile/architecture"
         }
       ],
-      "evidence": "2026-10-29: 152 automated tests and TypeScript passed; 10 actual Profile/Scout component scenarios passed with synthetic state. One live Gemini resume-builder request produced three valid proposed roles from synthetic approved facts, without JDs, real approvals or personal profile reads."
+      "evidence": "2026-10-29: 152 automated tests and TypeScript passed; 10 actual Profile/Scout component scenarios passed with synthetic state. One live Gemini resume-builder request produced three valid proposed roles from synthetic approved facts, without JDs, real approvals or personal profile reads.",
+      "definitionHistory": [
+        {
+          "date": "2026-10-30",
+          "title": "Resume-only role building without JD intake",
+          "detail": "An explicit resume mode uses only approved non-personal facts, validates supporting references, proposes roles without JD requirements, requires separate role approval and permits snapshot activation. Existing JD mode remains available.",
+          "acceptance": "An explicit resume mode uses only approved non-personal facts, validates supporting references, proposes roles without JD requirements, requires separate role approval and permits snapshot activation. Existing JD mode remains available.",
+          "reason": "User explicitly corrected the workflow: source-backed consolidation before actual Scout web discovery."
+        }
+      ]
     },
     {
       "id": "master-profile-scout",
       "owner": "master",
-      "title": "Approved Profile to Master to Keenable discovery",
+      "title": "Pass the saved master profile to Scout",
       "dependsOn": [
         "builder-resume-only",
         "profile-supabase-migration"
       ],
-      "acceptance": "The selected role from the current approved snapshot reaches main-page Keenable search through Master and Profile-owned memory. Search revalidates the snapshot; private facts and original resume text are excluded; location and filters remain user-controlled.",
+      "acceptance": "Pass only current source-supported titles/terms and allowlisted preferences from the saved consolidated profile; exclude generated role metadata, raw resumes and contact details.",
       "stage": "profile",
       "status": "complete",
-      "detail": "The selected role from the current approved snapshot reaches main-page Keenable search through Master and Profile-owned memory. Search revalidates the snapshot; private facts and original resume text are excluded; location and filters remain user-controlled.",
+      "detail": "Master loads Profile-owned validated search context for actual web discovery.",
       "blockers": [],
       "notes": [
         "2026-10-29: Implementation added; synthetic regression checks and release verification in progress. Full authenticated browser onboarding remains tracked separately.",
         "Bounded implementation and synthetic validation complete. Actual user role review, activation and hosted job search remain user onboarding steps; full browser/mobile and representative quality remain tracked separately.",
         "2026-10-29: Profile Discover jobs, brand, footer and approved-role search links use native browser anchors to the canonical same-site root search page. User-requested navigation repair; role/snapshot parameters remain preserved. No changes to approvals or providers.",
-        "2026-10-29: Corrected the return direction as well: main Scout My profile and Review my profile use native /profile anchors. The prior release changed only outbound Profile-to-Scout links. Statuses and user decisions unchanged."
+        "2026-10-29: Corrected the return direction as well: main Scout My profile and Review my profile use native /profile anchors. The prior release changed only outbound Profile-to-Scout links. Statuses and user decisions unchanged.",
+        "2026-10-30: Profile-owned memory loads the selected saved consolidated version. The graph validates version/binding consistency; preview records only Profile-to-Master preparation. Actual research records the exact scoped professional context and Master-to-Scout route before discovery, then updates the same completion/failure receipt.",
+        "2026-10-30: Master now loads the saved source-backed profile and selects master-profile. Generated role IDs/names/keywords are ignored. JS and Python require source-backed context before Scout; a legacy role-only profile stops for consolidated saving."
       ],
       "outputLinks": [
         {
@@ -2764,7 +3025,16 @@
           "url": "/profile/architecture"
         }
       ],
-      "evidence": "2026-10-29: 152 automated tests and TypeScript passed; 10 actual Profile/Scout component scenarios passed with synthetic state. One live Gemini resume-builder request produced three valid proposed roles from synthetic approved facts, without JDs, real approvals or personal profile reads."
+      "evidence": "2026-10-29: 152 automated tests and TypeScript passed; 10 actual Profile/Scout component scenarios passed with synthetic state. One live Gemini resume-builder request produced three valid proposed roles from synthetic approved facts, without JDs, real approvals or personal profile reads.",
+      "definitionHistory": [
+        {
+          "date": "2026-10-30",
+          "title": "Approved Profile to Master to Keenable discovery",
+          "detail": "The selected role from the current approved snapshot reaches main-page Keenable search through Master and Profile-owned memory. Search revalidates the snapshot; private facts and original resume text are excluded; location and filters remain user-controlled.",
+          "acceptance": "The selected role from the current approved snapshot reaches main-page Keenable search through Master and Profile-owned memory. Search revalidates the snapshot; private facts and original resume text are excluded; location and filters remain user-controlled.",
+          "reason": "User explicitly corrected the workflow: source-backed consolidation before actual Scout web discovery."
+        }
+      ]
     },
     {
       "id": "profile-guided-workspace",
@@ -2780,7 +3050,14 @@
       "blockers": [],
       "evidence": "2026-10-29: 152 existing backend tests and 15 new guided/link/dispatch cases passed. Ten guided workspace-component scenarios passed against synthetic ProfileService persistence; five Scout and eight diagram component regressions passed. One live synthetic Gemini request returned two valid proposed roles. Desktop intake/link/embedded Jobs layout inspected; full real-user/mobile evaluation remains tracked separately.",
       "notes": [
-        "The user requested a complete frontend simplification while retaining Supabase/Pinecone/Gemini, ownership, evidence and approval boundaries. These are bounded delivered capabilities, not certification of the complete career pipeline."
+        "The user requested a complete frontend simplification while retaining Supabase/Pinecone/Gemini, ownership, evidence and approval boundaries. These are bounded delivered capabilities, not certification of the complete career pipeline.",
+        "2026-10-30: The local Questions step is now Review missing experience, with source JD requirements, Yes/example, No, defer, decline and answer-fact review. A direct step link is supported. Hosted deployment and browser/mobile verification are separate.",
+        "2026-10-30: Inline answer receipts, retry from saved answers and a structured Fact review panel are implemented locally. Saved answers remain durable through model errors; browser interaction QA and hosted publication remain separate.",
+        "2026-10-30: The profile journey now has seven explicit stages. Answer review, Build and save consolidated profile, and Send to Master and Scout are separate visible steps. The consolidated view displays source/approval status and can download the saved artifact; step 7 previews context and offers Start research or Open filters.",
+        "2026-10-30: Step 3 now displays selected-JD requirements/evidence/gaps rather than AI role cards. Fact/questionnaire review precedes consolidated saving; the final step previews source-backed context and starts Scout retrieval of actual openings.",
+        "2026-10-30 cumulative-profile update: Facts displays both sections; the JD review uses one decision table, Step 5 reviews additions, Step 6 saves the master profile, and Step 7 dispatches actual job research. Local HTTP checks are separate from browser click-through verification.",
+        "2026-10-31 Section 1 correction: Section 1 has its own Read Section 1 from resume control, independent of model availability. Full-source coverage remains separate, and the Section 2 workflow is unchanged.",
+        "2026-11-01: User requested removal of four website steps: JD comparison, missing JD experience, profile additions and consolidated-profile building. Removed their navigation, panels and deep-link/automatic entry paths. Document analysis returns to Facts. Master/Scout remains available with its existing saved-profile guard; no automatic approval or consolidation was introduced. Saved data, prompts and backend actions are unchanged. Local verification is recorded in the project context; hosted publication is separate."
       ],
       "outputLinks": [
         {
@@ -2862,7 +3139,8 @@
       "blockers": [],
       "evidence": "2026-10-29: 152 existing backend tests and 15 new guided/link/dispatch cases passed. Ten guided workspace-component scenarios passed against synthetic ProfileService persistence; five Scout and eight diagram component regressions passed. One live synthetic Gemini request returned two valid proposed roles. Desktop intake/link/embedded Jobs layout inspected; full real-user/mobile evaluation remains tracked separately.",
       "notes": [
-        "The user requested a complete frontend simplification while retaining Supabase/Pinecone/Gemini, ownership, evidence and approval boundaries. These are bounded delivered capabilities, not certification of the complete career pipeline."
+        "The user requested a complete frontend simplification while retaining Supabase/Pinecone/Gemini, ownership, evidence and approval boundaries. These are bounded delivered capabilities, not certification of the complete career pipeline.",
+        "2026-10-30: The Profile-owned multi-JD Builder stage is connected to the editable policy, exact version fingerprint, durable per-document analysis and explicit interview/fact approval flow."
       ],
       "outputLinks": [
         {
@@ -2899,7 +3177,7 @@
       "id": "master-python-adapters",
       "owner": "master",
       "title": "Connect production adapters to Python contracts",
-      "status": "not_started",
+      "status": "in_progress",
       "stage": "agent-development",
       "dependsOn": [
         "master-python-foundation"
@@ -2908,16 +3186,24 @@
       "detail": "Connect current owner-scoped Profile/Supabase approvals, Gemini analysis/embeddings and bounded Keenable discovery. Then implement Matcher/Tailor/Critic/Storage adapters with representative evaluation and no fake approvals or paid fallback.",
       "blockers": [],
       "notes": [
-        "2026-10-29: Local Python backend work only. Hosted version 17, user data, existing JS providers and UI are unchanged."
+        "2026-10-29: Local Python backend work only. Hosted version 17, user data, existing JS providers and UI are unchanged.",
+        "2026-10-30: All eight Python contracts have real bindings in the local service. Profile reloads current owner/version-specific Supabase approvals and exact evidence; Gemini supplies proposals, matching, tailoring and separate Critic checks; Scout reuses bounded Keenable discovery; application storage is owner-scoped local SQLite. Live synthetic preparation passed; representative profile/model evaluation remains open.",
+        "2026-10-30: Python SearchInput now carries approved professional Scout context and merged seen history. Search checkpoints exclude volatile history to avoid repeating completed discovery during resume.",
+        "2026-10-30: Python profile contracts/loaders now carry search_profile with sourced title/term references and permit zero generated roles. Profile and Master refuse legacy role-only discovery; titleless contexts are supported. Search terms are checked against approved source quotes."
       ],
-      "outputLinks": [],
+      "outputLinks": [
+        {
+          "label": "Local pipeline guide",
+          "url": "/?view=applications"
+        }
+      ],
       "source": "backend/src/career_scout/agent.py"
     },
     {
       "id": "master-python-service",
       "owner": "master",
       "title": "Deploy authenticated durable Python service and web bridge",
-      "status": "not_started",
+      "status": "in_progress",
       "stage": "agent-development",
       "dependsOn": [
         "master-python-adapters",
@@ -2927,10 +3213,87 @@
       "detail": "Deploy a separately hosted Python service with trusted owner identity, durable recovery/checkpoints, idempotent writes, stale-profile guards, cancellation and redacted observability. Connect the existing web service only after integration tests pass.",
       "blockers": [],
       "notes": [
-        "2026-10-29: Local Python backend work only. Hosted version 17, user data, existing JS providers and UI are unchanged."
+        "2026-10-29: Local Python backend work only. Hosted version 17, user data, existing JS providers and UI are unchanged.",
+        "2026-10-30: Start-Scout launches a token-authenticated loopback Python service and the app. Website-derived identity scopes requests, run history and downloads. Local integration/health passed. Hosted service deployment and production authentication remain pending.",
+        "2026-10-30: Corrected the Windows .cmd launcher to invoke the combined Python/web launcher, matching Start-Scout.ps1. Started it in the background with provider network access; local website, Python pipeline health and Supabase connectivity/profile-load probe all returned HTTP 200.",
+        "2026-10-30: Prompt endpoint reads the Fact, Profile Builder and Scout files through a fixed authenticated allowlist. The running local launcher uses this service; hosted bundles include build-time copies.",
+        "2026-10-30: Restarted the verified owned launcher after Python contract/routing changes. The source-only master profile is used by both discovery and application preparation; historical factual decisions remain intact."
       ],
-      "outputLinks": [],
+      "outputLinks": [
+        {
+          "label": "Local pipeline guide",
+          "url": "/?view=applications"
+        }
+      ],
       "source": "backend/src/career_scout/agent.py"
+    },
+    {
+      "id": "builder-role-expansion",
+      "owner": "profile-builder",
+      "title": "Per-role experience and skills expansion with a separate revision approval",
+      "dependsOn": [
+        "profile-guided-workspace",
+        "builder-requirements"
+      ],
+      "stage": "profile",
+      "status": "in_review",
+      "acceptance": "Separate role-specific work and skills tables compare supplied JDs with the Factual Profile. Exact approvals persist without changing existing facts; rejected claims and unapproved Somewhat revisions remain excluded. Revised wording requires its own approval. Confirmed additions appear in the factual and validated Final Profile. Replays and stale submissions are safe.",
+      "detail": "New Builder workspace and Profile-owned decision ledger. Somewhat saves a draft; only explicit approval creates a user-confirmed fact. One Final Profile reuses the existing save and source/approval checks.",
+      "blockers": [
+        "The first supplied LinkedIn job ID remains unavailable.",
+        "User review of generated questionnaires and real decision interaction remains outstanding; no answers were auto-approved.",
+        "Three comparisons remain unresolved (financial-return metrics, investor due diligence and daily risk-control processes); they remain visible without a match claim or approval controls."
+      ],
+      "notes": [
+        "2026-11-01: Local implementation and regression tests passed. The task remains In Review pending live model and user interaction acceptance. Existing task IDs/statuses were preserved; this new capability adds one explicit task.",
+        "Confirmed additions are saved independently of Final Profile readiness. Finalization still requires refreshed requirement comparisons and valid source/approval bindings. Draft-only revisions are not facts.",
+        "Fact prompt, Fact agent, resume parsers, grounding and factual-view modules are preserved. No real profile reads, decisions or writes were used for the isolated test.",
+        "2026-11-01 live retry: Gemini completed JD extraction and comparison of 43 requirements for two retrieved roles. Persisted website questionnaires have 9 work/9 skills items for Hilco and 9 work/10 skills items for AQR. All 37 await user review. Existing facts and approvals were identical before/after. Added literal employer-bullet coverage and conservative full-source questions when model support/wording fails grounding. Complete statements are retained rather than conjunction fragments. Expansion mode is preserved through dispatch.",
+        "2026-11-01: Builder now compares source-stated work/skills separately from approved evidence, so pending approval alone does not repeat a question. Specific JD-derived professional headings replace generic categories in the questionnaire. Partial coverage asks only exact missing JD spans and displays existing source statements alongside original JD context. Unresolved comparisons remain visible without becoming claims or false matches. Gemini input is deduplicated and processed in batches of eight; no network-error retry or provider fallback was added.",
+        "2026-11-01: Implemented estimated semantic coverage per JD requirement: core component weight 3, detail weight 1, exact source references, code-calculated percentage. At least 75% skips only minor gaps; core/critical gaps override. 50-74% keeps focused questions; below 50% defers only incidental differences. Skipped details remain unconfirmed, distinct from recorded matches. Related pending work/skill gaps are grouped per role/topic/storage category; Somewhat still requires separate approval. Full updated Builder prompt is saved. Existing Fact files are preserved.",
+        "2026-11-01: Fixed recurring prompt-save build overlays. Vite now classifies only backend agent prompt.md files as assets, so RSC hot reload can transform bare paths without parsing Markdown as JavaScript; explicit ?raw imports still return complete policy text. Two regression tests reproduce the original failure and verify bare/raw paths across client, RSC and SSR. Live authenticated HMR checks re-saved Builder, Fact and Scout policies with identical bytes, observed three rsc:update events without errors, and verified Profile HTTP 200. No model calls, questionnaire logic or profile decisions were changed.",
+        "2026-11-01: Added a bounded independent evidence review before scored proposed questions. It combines relevant source passages, separates supported duties from qualifiers, rejects contradictory false-zero assessments, and receives candidate evidence and validation issues without the previous score in batches of two. Similarity only retrieves review candidates; it never establishes facts. Audience-specific evidence checks keep unsupported prospective audiences unconfirmed. Updated the full Profile Builder prompt and retained all existing decision/persistence safeguards.",
+        "2026-11-01: Moved all JD intake (public link, file upload, pasted text and saved-source selection) from the resume step to the top of Expand experience and skills. Link entry is the default; import success directs the user to Analyze roles & refresh questionnaires. Resume text and JD text use separate drafts and explicit source kinds. Existing link reader, model logic, agent prompts, facts and approvals were not changed. TypeScript and 34 existing Builder/link-intake/workflow tests passed; authenticated local page and client module returned HTTP 200 without compile errors. Browser automation was unavailable, so visual interaction acceptance is not claimed. No profile mutations, model requests or hosted deployment were performed for this UI change.",
+        "2026-11-01: Fixed LinkedIn selected-job search links at JD intake. A valid currentJobId on an official LinkedIn jobs/search or jobs/search-results URL is converted to the direct jobs/view posting before fetching; search/tracking parameters are discarded. Missing, malformed or conflicting selections receive an actionable error. Existing HTTPS, DNS, redirect, size and source-text guards remain enforced. The reported search page reproduced the unreadable-JD error before the fix; the normalized posting returned its actual title and description in a live read-only check. 21 targeted tests and TypeScript passed. No Gemini request, profile write, prompt change or hosted deployment occurred.",
+        "2026-11-01: Approved, rejected and already-supported questionnaire rows now appear beneath a collapsed Already answered bar; pending, Somewhat revisions and source-review issues stay unfinished. New JD intake focuses the visible questionnaire on new roles and retains earlier questionnaires under a collapsed bar with an unfinished-item count. Analyze new roles sends only unreviewed selected document IDs; Profile validates that scope, extracts/compares only those JDs and preserves prior reviews, selected sources, facts, decisions and drafts. A separate explicit refresh-all action remains available for Final Profile readiness. All 577 Node tests and TypeScript passed, including scoped model input, approval/history preservation and archive rendering. Read-only rendering of the saved profile confirmed seven completed rows under the closed archive; local page and client modules returned HTTP 200. No real decisions, model requests or profile writes were made for this change; visual browser interaction and hosted deployment remain separate."
+      ],
+      "outputLinks": [
+        {
+          "label": "Profile Builder questionnaires",
+          "url": "/profile?step=Builder"
+        }
+      ],
+      "evidence": "2026-11-01: 571 Node tests and TypeScript passed. A live Gemini refresh saved 43 comparisons with 32 recorded requirements, six skipped/deferred items and three unresolved comparisons. The reported collaboration/reporting example is now an estimated 85% minor-gap skip, with its uncertain audience retained as unconfirmed; communication is covered. Nine proposed/invalid comparisons received independent review. Isolated real-source replay retained a genuinely missing mandatory-tool control as a question. Facts, approvals and eight protected Fact/ingestion/view files remained identical. No hosted deployment or user decisions were performed; representative semantic-quality and user interaction acceptance remain outstanding."
+    },
+    {
+      "id": "profile-automatic-final-save",
+      "owner": "profile",
+      "title": "Save Final Profile with automatic guarded comparison refresh",
+      "dependsOn": [
+        "profile-consolidation",
+        "builder-role-expansion"
+      ],
+      "stage": "profile",
+      "status": "in_review",
+      "acceptance": "One save action refreshes only stale comparisons, preserves every existing validation and user decision, stops on unresolved/failing checks, and reports success only for a validated persisted snapshot. Retries reuse unchanged snapshots. Master/Scout dispatch remains separate.",
+      "detail": "Save Final Profile now performs server-owned preflight, bounded stale-JD analysis/comparison, full-selection validation and consolidated snapshot persistence. Current comparisons are reused only when document/requirement, source, fact, answer, decision, disclosure, policy and prompt bindings match. Missing bindings from older reviews trigger revalidation. Existing fact and questionnaire decisions are never generated or approved by this operation. Unresolved comparisons stop the save; explicit recheck is available. Existing finalization, source/approval binding, owner, revision, deletion and indexing guards remain. No Scout dispatch occurs during save.",
+      "blockers": [
+        "Real-user save interaction and representative live-model refresh acceptance remain outstanding.",
+        "Hosted deployment and visual browser acceptance remain separate."
+      ],
+      "notes": [
+        "2026-11-01: User approved the preview with explicit instructions to preserve all rules and checks. Implemented the save orchestrator and replaced the separate refresh-all button with automatic validation.",
+        "Failed checks keep the last saved profile and all factual decisions intact. Comparison work may persist as completed analysis before the final save is held. Unresolved comparison retries are explicit and scoped, never an automatic loop.",
+        "2026-11-01: One Final Profile now displays the latest successful snapshot save time in America/New_York, its version and validated current/outdated status. Historical stale saves stay visible without enabling handoff. Loading, never-saved and unavailable timestamp states are explicit. This is a successful-save timestamp, not a button-click audit. No agent prompt, Fact ingestion, approval, persistence or handoff rules changed."
+      ],
+      "outputLinks": [
+        {
+          "label": "One Final Profile",
+          "url": "/profile?step=Builder"
+        }
+      ],
+      "evidence": "2026-11-01: Full Node regression suite, 22 dedicated automatic-save checks, TypeScript and production build passed. Tests cover current-comparison reuse, new-JD-only refresh and assembly, changed facts/prompts, source coverage, required responses, pending extraction/facts, conflicts, deletion/indexing, missing model, provider/storage failure, concurrent edits, receipt tampering, unchanged retries, excluded drafts/rejections and no Scout dispatch. Read-only local preflight found three legacy comparisons needing binding refresh and no manual blockers; eight protected Fact/ingestion/view files stayed byte-identical. Local page/client modules returned HTTP 200. No real-profile save, real approval, live model request, hosted deployment or visual browser acceptance was performed. 2026-11-01: All 26 targeted save/status tests and TypeScript passed. Rendering checks cover historical stale saves, validated version matching, empty/loading/invalid timestamps and New York daylight-saving transitions. Authenticated local page and status module returned HTTP 200; read-only profile retrieval retained revision 194. No profile writes, model calls, hosted deployment or visual browser interaction were performed.",
+      "source": "lib/profile/final-profile-save.mjs"
     }
   ],
   "communication": [
@@ -3107,6 +3470,116 @@
       "date": "2026-10-29",
       "title": "Root repository reorganization: local validation",
       "detail": "Application and existing Git history moved to job_search root. 160 protected files matched original SHA-256 hashes after relocation. 167 app tests, 35 Python tests, Ruff, TypeScript and production build passed from the new location. Start-Scout.cmd served the profile workspace and progress API with HTTP 200. Entire research/ and .local/ plus credentials remain untracked/ignored; generated TypeScript cache removed from tracking. No provider calls, approval changes, remote push or deployment. The original Job Search directory remains empty but locked by the open workspace."
+    },
+    {
+      "date": "2026-10-30",
+      "title": "Local Python application pipeline and live adapters",
+      "detail": "Local Python service/registry, owner-scoped SQLite checkpoints/packages, cancellation, stale-profile recheck, independent Critic gates and selected-job workflow validated. A live synthetic resume-to-package run reached ready_to_apply with zero revisions, six tool calls and a downloaded ZIP; synthetic Supabase profiles were purged. One separate bounded live Keenable batch returned one verified job packet. Web auth/health/history and request-denial checks passed. Full browser interaction review was unavailable because the browser host/native accessibility tools could not access a usable browser. Real-user quality and hosted deployment are not claimed."
+    },
+    {
+      "date": "2026-10-30",
+      "title": "Local pipeline regression verification",
+      "detail": "41 Python tests and 174 Node tests passed, along with Ruff, TypeScript and the production build. Six local HTTP checks passed: authenticated health/history, denied anonymous access, denied owner spoofing, denied cross-origin writes and denied static access to the private SQLite journal. A known relocated pytest-cache permission issue was avoided by disabling its cache plugin; the resulting ignored cache_dir configuration warning does not affect test results. Full browser interaction QA remains unverified."
+    },
+    {
+      "date": "2026-10-30",
+      "title": "Windows command launcher correction",
+      "detail": "Executed the corrected Start-Scout.cmd. Website /, /api/pipeline?health=1 and /api/profile/health returned HTTP 200. The profile probe confirmed migration 2026-10-29.2 and reachable profile loading. The app is running locally in the background for the user; provider keys were not displayed."
+    },
+    {
+      "date": "2026-10-30",
+      "title": "Profile Builder prompt and multi-JD interview repair",
+      "detail": "Added targeted tests for omitted questions, recurring requirements, unsupported roles, Yes/example approval boundaries, No without positive facts, reused evidence, full multi-JD sequencing, the current prompt and supplemental evidence assessment. A user-requested local comparison completed with full requirement coverage, a matching current prompt fingerprint, saved gap questions and unchanged existing fact approval references. No private source text or answers are included in this record. Hosted publication and full browser interaction QA remain separate."
+    },
+    {
+      "date": "2026-10-30",
+      "title": "Builder interview regression and local runtime checks",
+      "detail": "183 Node tests, 41 Python tests, Ruff, TypeScript and the production build passed. Nine new Builder cases cover multi-JD sequencing, the actual editable policy, schema-complete supplementary evidence assessment, grouped gap questions, unsupported roles, Yes/example boundaries, No without positive facts and approved evidence reuse. The user-requested local run verified the current prompt fingerprint and complete evidence assessment, saved targeted questions, and preserved all existing fact approvals. The Questions page returned HTTP 200; full interactive browser QA remains separate."
+    },
+    {
+      "date": "2026-10-30",
+      "title": "Fact, Builder, Scout prompt execution and durable questionnaire repair",
+      "detail": "246 Node tests and 41 Python tests passed, along with TypeScript, Ruff and a production build. New coverage includes 22 questionnaire save/replay/retry/consistency cases, 21 Fact review/date-union cases, 18 Scout policy cases and two current-policy selector cases. A disposable live Supabase questionnaire check confirmed bare Yes and short-answer saving, no duplicate stale replay, current Fact prompt use and cleanup. Its Gemini extraction returned HTTP 503 UNAVAILABLE, so successful live extraction is not claimed. Local Questions, authenticated pipeline health and profile health returned HTTP 200. Full interactive browser QA and hosted publication remain separate."
+    },
+    {
+      "date": "2026-10-30",
+      "title": "Consolidated profile and visible Master-to-Scout handoff",
+      "detail": "292 Node tests and 41 Python tests passed, with TypeScript and Ruff. New tests cover 17 consolidated-profile projections, 17 finalization cases, seven handoff cases and five full service/storage flows including recursive JSONB object-key reordering and New York date boundaries. Live disposable Supabase validation saved the consolidated artifact, loaded the same version through JS/Python, included approved answer evidence in Scout context, kept preview read-only, upserted dispatch/completion under one receipt and preserved approvals; fixture cleanup passed. This live check did not perform model generation or vacancy discovery. Revised step 5/6/7 URLs and authenticated pipeline/Profile health returned HTTP 200. Browser host and native input geometry prevented interactive click-through QA; no browser success is claimed. Hosted deployment remains separate."
+    },
+    {
+      "date": "2026-10-30",
+      "title": "Consolidated workflow release checks",
+      "detail": "Production build and diff checks passed after the final integration changes. All updated client modules and completion styles returned HTTP 200 from the running local server. The reviewed record validates with all 93 stable task IDs retained; the Profile architecture document was regenerated for revision 2026-10-30.5."
+    },
+    {
+      "date": "2026-10-30",
+      "title": "User-corrected source-only master profile and actual vacancy discovery",
+      "detail": "322 Node tests, 43 Python tests, TypeScript, Ruff and the production build passed. Source-profile tests exclude legacy generated roles/alternative titles/keywords, preserve missing titles, require source/approval references, save with zero role approvals, and exercise complete independent JD assessment, questionnaire facts, JSONB consistency and exact owner-scoped handoff receipts. Python requires the saved source-backed search profile and rejects unapproved/unsourced search terms. A disposable live Supabase check saved and loaded the roleless profile through JS/Python, preserved a missing title, included approved answer evidence in Scout context and persisted dispatch/completion receipts; cleanup passed with zero model/search calls for that storage check. A separate bounded live Keenable check using generic source-backed synthetic criteria returned three valid source-linked actual vacancy packets, with no model-generated jobs. Revised step URLs returned HTTP 200 and contained JD analysis without the generated-role stage or approval UI. Real-user factual decisions were not changed; hosted publication and browser interaction QA remain separate."
+    },
+    {
+      "date": "2026-10-30",
+      "title": "Cumulative experience and atomic JD-review decisions",
+      "detail": "399 Node tests and 43 Python tests passed, plus TypeScript, Ruff, production build and diff checks. Regressions cover full-paragraph accounting, grouped legacy employment/source context, cumulative approved work, atomic exact Approve/Somewhat and negative Decline decisions, replay/CAS/conflict rollback, per-row evidence, separate skills/qualifications, future-JD decision reuse, disclosure suppression, partial-scope support and old portal-AI filtering. Actual Workers tests include the new pure dependency modules. A bounded live Gemini/Supabase check used one disposable synthetic resume and two JDs: 13 fact proposals, all nine passages accounted, four review rows, two confirmed additions and two declines, replay without another write, and a saved source-only master profile with four approved experience claims. Synthetic cleanup passed. The check made no vacancy-search call and did not alter real-user approvals. Local Facts/JD review/Consolidated/Search pages, the table module and Profile/Python health returned HTTP 200. Hosted Site version 17 is unchanged; full browser/mobile click-through and representative real-user evaluation remain pending. Legacy-to-structured record deduplication requires matching explicit role, date interval and surviving source segments; original approval entries remain intact. User-confirmed qualification aliases display exact degree/certification statements without invented dates."
+    },
+    {
+      "date": "2026-10-31",
+      "title": "Section 1 source mapping and provider-independent factual intake",
+      "detail": "424 Node tests and 43 Python tests passed, with TypeScript and Ruff. New checks cover literal contact/record headers, abbreviated source dates, fresh and legacy intake, exact evidence, upload ordering, one-CAS pending proposals, schema-bound receipts, stale revisions, parser migration and repeat-without-save. Live authenticated local repair produced 41 active pending Section 1 fields from the existing saved source, reduced displayed missing fields from 28 to three genuinely unprovided categories, retained all 14 original approved records and the exact approval history, and left Section 2 facts and JD data unchanged. A repeat produced no new revision. No model call or job search ran in this check. Hosted publication and browser interaction verification remain distinct; the project context file is explicitly deferred until user approval. The production build and diff checks passed. Native browser page text confirmed the corrected missing-field count and pending-review count; screenshot capture was stopped when computer-use could not confidently verify the browser URL, so full visual/click-through QA is not claimed."
+    },
+    {
+      "date": "2026-11-01",
+      "title": "Profile Builder role questionnaire revision",
+      "detail": "2026-11-01: 538 Node regression tests passed, including 8 new Builder persistence/approval cases; TypeScript passed. Keenable retrieved matching Hilco/AQR descriptions. One isolated Gemini attempt failed with provider unavailability; no model comparison result or real-profile write was produced. A final 19 focused checks passed, including UI rendering, draft survival after reanalysis and withdrawn-evidence handling."
+    },
+    {
+      "date": "2026-11-01",
+      "title": "Profile Builder live questionnaires saved",
+      "detail": "2026-11-01: 546 Node tests and TypeScript passed. Live Gemini-backed comparison saved for two real job descriptions using the current profile. Reload verified 37 pending review items and unchanged factual records/approvals. User interaction acceptance and hosted deployment remain separate."
+    },
+    {
+      "date": "2026-11-01",
+      "title": "Source-aware Builder coverage and specific questionnaire headings",
+      "detail": "2026-11-01: 555 Node tests and TypeScript passed. Live Gemini comparison of 43 requirements saved and reloaded: 17 requirements recognized as already recorded, 23 remaining questionnaire rows, and 3 explicitly unresolved comparisons with no approval controls. Exact source and version checks protect discovery coverage; a single bounded refinement handles unsafe model scope. Facts, approvals and eight protected Fact/ingestion/view files were unchanged. Hosted publication and user interaction acceptance remain separate."
+    },
+    {
+      "date": "2026-11-01",
+      "title": "75% requirement coverage and grouped discovery questions",
+      "detail": "2026-11-01: 561 Node tests and TypeScript passed for the 75% questionnaire filter. Gemini refreshed and saved 43 comparisons: 42 have component-based estimates, 23 are already recorded, five are skipped/deferred, and one cross-asset comparison remains unresolved. The UI has 15 review rows instead of 23, with related metric gaps grouped. Before/after checks preserved all factual records, approvals and eight protected Fact/ingestion/view files. No hosted deployment or user decisions were performed."
+    },
+    {
+      "date": "2026-11-01",
+      "title": "Agent prompt Markdown hot reload fix",
+      "detail": "2026-11-01: Fixed recurring prompt-save build overlays. Vite now classifies only backend agent prompt.md files as assets, so RSC hot reload can transform bare paths without parsing Markdown as JavaScript; explicit ?raw imports still return complete policy text. Two regression tests reproduce the original failure and verify bare/raw paths across client, RSC and SSR. Live authenticated HMR checks re-saved Builder, Fact and Scout policies with identical bytes, observed three rsc:update events without errors, and verified Profile HTTP 200. No model calls, questionnaire logic or profile decisions were changed. The production build also passed."
+    },
+    {
+      "date": "2026-11-01",
+      "title": "Independent Builder evidence review before questionnaire scoring",
+      "detail": "2026-11-01: 571 Node tests and TypeScript passed. A live Gemini refresh saved 43 comparisons with 32 recorded requirements, six skipped/deferred items and three unresolved comparisons. The reported collaboration/reporting example is now an estimated 85% minor-gap skip, with its uncertain audience retained as unconfirmed; communication is covered. Nine proposed/invalid comparisons received independent review. Isolated real-source replay retained a genuinely missing mandatory-tool control as a question. Facts, approvals and eight protected Fact/ingestion/view files remained identical. No hosted deployment or user decisions were performed; representative semantic-quality and user interaction acceptance remain outstanding."
+    },
+    {
+      "date": "2026-11-01",
+      "title": "JD intake relocated to Builder",
+      "detail": "2026-11-01: Moved all JD intake (public link, file upload, pasted text and saved-source selection) from the resume step to the top of Expand experience and skills. Link entry is the default; import success directs the user to Analyze roles & refresh questionnaires. Resume text and JD text use separate drafts and explicit source kinds. Existing link reader, model logic, agent prompts, facts and approvals were not changed. TypeScript and 34 existing Builder/link-intake/workflow tests passed; authenticated local page and client module returned HTTP 200 without compile errors. Browser automation was unavailable, so visual interaction acceptance is not claimed. No profile mutations, model requests or hosted deployment were performed for this UI change."
+    },
+    {
+      "date": "2026-11-01",
+      "title": "LinkedIn selected-job link normalization",
+      "detail": "2026-11-01: Fixed LinkedIn selected-job search links at JD intake. A valid currentJobId on an official LinkedIn jobs/search or jobs/search-results URL is converted to the direct jobs/view posting before fetching; search/tracking parameters are discarded. Missing, malformed or conflicting selections receive an actionable error. Existing HTTPS, DNS, redirect, size and source-text guards remain enforced. The reported search page reproduced the unreadable-JD error before the fix; the normalized posting returned its actual title and description in a live read-only check. 21 targeted tests and TypeScript passed. No Gemini request, profile write, prompt change or hosted deployment occurred."
+    },
+    {
+      "date": "2026-11-01",
+      "title": "Answered questionnaire archive and new-role-only analysis",
+      "detail": "2026-11-01: Approved, rejected and already-supported questionnaire rows now appear beneath a collapsed Already answered bar; pending, Somewhat revisions and source-review issues stay unfinished. New JD intake focuses the visible questionnaire on new roles and retains earlier questionnaires under a collapsed bar with an unfinished-item count. Analyze new roles sends only unreviewed selected document IDs; Profile validates that scope, extracts/compares only those JDs and preserves prior reviews, selected sources, facts, decisions and drafts. A separate explicit refresh-all action remains available for Final Profile readiness. All 577 Node tests and TypeScript passed, including scoped model input, approval/history preservation and archive rendering. Read-only rendering of the saved profile confirmed seven completed rows under the closed archive; local page and client modules returned HTTP 200. No real decisions, model requests or profile writes were made for this change; visual browser interaction and hosted deployment remain separate."
+    },
+    {
+      "date": "2026-11-01",
+      "title": "Automatic guarded Final Profile save",
+      "detail": "2026-11-01: Full Node regression suite, 22 dedicated automatic-save checks, TypeScript and production build passed. Tests cover current-comparison reuse, new-JD-only refresh and assembly, changed facts/prompts, source coverage, required responses, pending extraction/facts, conflicts, deletion/indexing, missing model, provider/storage failure, concurrent edits, receipt tampering, unchanged retries, excluded drafts/rejections and no Scout dispatch. Read-only local preflight found three legacy comparisons needing binding refresh and no manual blockers; eight protected Fact/ingestion/view files stayed byte-identical. Local page/client modules returned HTTP 200. No real-profile save, real approval, live model request, hosted deployment or visual browser acceptance was performed."
+    },
+    {
+      "date": "2026-11-01",
+      "title": "Final Profile last successful save display",
+      "detail": "2026-11-01: All 26 targeted save/status tests and TypeScript passed. Rendering checks cover historical stale saves, validated version matching, empty/loading/invalid timestamps and New York daylight-saving transitions. Authenticated local page and status module returned HTTP 200; read-only profile retrieval retained revision 194. No profile writes, model calls, hosted deployment or visual browser interaction were performed."
     }
   ]
 }

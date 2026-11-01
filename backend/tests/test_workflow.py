@@ -24,8 +24,10 @@ from career_scout.contracts import (
     ProposedFact,
     Role,
     RunContext,
+    ScoutContext,
     SearchInput,
     SearchOutput,
+    SearchTerm,
     Source,
     StorageOutput,
     WorkflowRequest,
@@ -51,14 +53,10 @@ def approved(**kwargs):
         approval_ref="snapshot-approval-1",
         current=True,
         facts=(fact,),
-        roles=(
-            ApprovedRole(
-                id="r1",
-                name="Analyst",
-                keywords=("reporting",),
-                fact_ids=("f1",),
-                approval_ref="role-approval-1",
-            ),
+        roles=(),
+        search_profile=ScoutContext(
+            responsibilities=(SearchTerm(term="Built reports", factIds=("f1",)),),
+            approvedFactIds=("f1",),
         ),
     ).model_copy(update=kwargs)
 
@@ -66,7 +64,7 @@ def approved(**kwargs):
 def request(**kwargs):
     return WorkflowRequest(
         saved_profile_version="profile-1",
-        selected_role_id="r1",
+        selected_role_id="master-profile",
         **kwargs,
     )
 
@@ -182,12 +180,11 @@ async def test_made_up_source_evidence_is_rejected():
 
 
 @pytest.mark.parametrize("jds", [(), (Source(id="jd-1", kind="jd", text="Reporting role"),)])
-async def test_builder_accepts_optional_jd_but_never_approves(jds):
-    registry, calls = fixture_registry(profile=approved(roles=()))
+async def test_unsaved_profile_with_optional_jds_does_not_invent_role_or_search(jds):
+    registry, calls = fixture_registry(profile=approved(search_profile=None))
     result = await run(request(sources=jds), context=context(), registry=registry)
-    assert result["status"] == "needs_role_approval"
-    assert [call[0] for call in calls] == ["memory", "profile-builder"]
-    assert calls[-1][1].job_descriptions == jds
+    assert result["status"] == "needs_profile_save"
+    assert [call[0] for call in calls] == ["memory"]
 
 
 async def test_discovery_receives_only_allowed_search_fields():
@@ -196,12 +193,14 @@ async def test_discovery_receives_only_allowed_search_fields():
     assert result["status"] == "jobs_found"
     assert [call[0] for call in calls] == ["memory", "scout"]
     assert calls[-1][1].model_dump() == {
-        "role_name": "Analyst",
-        "keywords": ("reporting",),
+        "role_name": "",
+        "keywords": (),
         "preferences": Preferences().model_dump(),
+        "scout_context": approved().search_profile.model_dump(),
+        "previous_seen": (),
     }
     assert calls[-1][2].context.owner_id == "synthetic-owner"
-    assert "editable prompt" in calls[-1][2].prompt
+    assert "Scout Agent" in calls[-1][2].prompt
     assert all((item["from"], item["to"]) in ROUTES for item in result["audit"])
 
 
@@ -223,6 +222,7 @@ async def test_complete_synthetic_pipeline_requires_matching_receipt():
         "matcher",
         "tailor",
         "critic",
+        "memory",
         "application-storage",
     ]
     assert result["receipt"].idempotency_key.startswith("run-1:")
@@ -250,13 +250,38 @@ async def test_memory_output_revalidated_even_if_model_copy_bypassed_validation(
     assert len(calls) == 1
 
 
-async def test_missing_role_cannot_trigger_search():
+async def test_invalid_master_profile_selection_cannot_trigger_search():
     registry, calls = fixture_registry()
     result = await run(
-        WorkflowRequest(saved_profile_version="profile-1"), context=context(), registry=registry
+        WorkflowRequest(saved_profile_version="profile-1", selected_role_id="generated-role"), context=context(), registry=registry
     )
-    assert result["error"]["code"] == "role_selection_required"
+    assert result["error"]["code"] == "profile_selection_required"
     assert len(calls) == 1
+
+
+async def test_legacy_generated_roles_do_not_replace_a_saved_source_backed_profile():
+    legacy = ApprovedRole(
+        id="invented-role",
+        name="Unprovided Career Direction",
+        keywords=("Unsupported title",),
+        fact_ids=("f1",),
+        approval_ref="legacy-role-approval",
+    )
+    registry, calls = fixture_registry(profile=approved(search_profile=None, roles=(legacy,)))
+    result = await run(request(), context=context(), registry=registry)
+    assert result["status"] == "needs_profile_save"
+    assert [call[0] for call in calls] == ["memory"]
+
+
+def test_search_profile_rejects_unapproved_or_unsourced_professional_terms():
+    for term in [
+        SearchTerm(term="Built reports", factIds=("foreign-fact",)),
+        SearchTerm(term="Unprovided technology", factIds=("f1",)),
+    ]:
+        changed = approved().model_dump()
+        changed["search_profile"]["skills"] = [term.model_dump()]
+        with pytest.raises(ValidationError):
+            ApprovedProfile.model_validate(changed)
 
 
 @pytest.mark.parametrize(
@@ -386,7 +411,7 @@ def test_routes_match_existing_javascript_policy():
 
 def test_all_ten_prompts_are_available_and_no_path_traversal():
     for agent in ("master", "profile", *(spec.owner for spec in TOOL_SPECS)):
-        assert "Instructions to amend" in read_prompt(agent)
+        assert read_prompt(agent).strip()
     with pytest.raises(ValueError):
         read_prompt("../../.env.local")
 

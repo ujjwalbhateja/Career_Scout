@@ -1,4 +1,4 @@
-"""Propose supported roles, keywords and follow-up questions from approved facts; JDs are optional. Adapter implementation is intentionally unbound."""
+"""Compare supplied JD requirements with approved facts and return material questions."""
 
 from career_scout.contracts import BuilderInput, BuilderOutput
 from career_scout.tools import ToolSession, ToolSpec
@@ -8,7 +8,7 @@ SPEC = ToolSpec(
     "profile-builder",
     BuilderInput,
     BuilderOutput,
-    "Propose supported roles, keywords and follow-up questions from approved facts; JDs are optional.",
+    "Compare JD requirements with approved facts; never invent roles or qualifications.",
     "none",
 )
 
