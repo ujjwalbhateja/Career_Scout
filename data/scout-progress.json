@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "revision": "2026-11-01.12",
+  "revision": "2026-11-01.13",
   "reviewedOn": "2026-11-01",
   "summary": "The local Profile Builder expands one Factual Profile using separate Professional Work Experience and Skills questionnaires per selected JD. Approve adds the exact statement; Reject adds nothing; Somewhat persists a draft requiring separate approval of revised wording. Existing Fact extraction and factual presentation are unchanged. Approved additions persist through Profile-owned storage, then the existing validated Final Profile save includes them. Local tests and provider availability are separate from user acceptance and hosted publication.",
   "framework": {
@@ -3580,6 +3580,11 @@
       "date": "2026-11-01",
       "title": "Final Profile last successful save display",
       "detail": "2026-11-01: All 26 targeted save/status tests and TypeScript passed. Rendering checks cover historical stale saves, validated version matching, empty/loading/invalid timestamps and New York daylight-saving transitions. Authenticated local page and status module returned HTTP 200; read-only profile retrieval retained revision 194. No profile writes, model calls, hosted deployment or visual browser interaction were performed."
+    },
+    {
+      "date": "2026-11-01",
+      "title": "Private GitHub source repository publication",
+      "detail": "Created https://github.com/ujjwalbhateja/Career_Scout as a private repository under the authorized account. Published the project source and existing Git history on main; remote commit matched local application checkpoint 890cb717fccb07d3b836a995f22681e576a3bb26. Before publication, 603 Node tests and the production build passed. Credential-pattern scan found no matches across 321 working files and 364 historical blobs; ignored local inputs, credentials, research, caches and dependencies stayed excluded. This publishes source code only: no hosted application deployment, provider configuration, stored-profile migration or collaborator invitations were performed. Existing feature statuses and acceptance gates remain unchanged."
     }
   ]
 }

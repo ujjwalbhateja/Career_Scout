@@ -2,7 +2,15 @@
 
 Updated 2026-11-01, America/New_York. Repository/app root: `C:\Users\ujjwa\job_search`.
 
-## Latest checkpoint: Final Profile save timestamp on the main website (2026-11-01)
+## Latest checkpoint: private GitHub source repository (2026-11-01)
+
+Repository: https://github.com/ujjwalbhateja/Career_Scout (private). Local origin points to https://github.com/ujjwalbhateja/Career_Scout.git and main tracks origin/main. Existing Git history was retained. The uploaded application checkpoint is 890cb717fccb07d3b836a995f22681e576a3bb26; its remote SHA matched the local commit. This documentation checkpoint follows that code upload.
+
+Before publication, all 603 Node tests and the production build passed. A credential-pattern scan found no matches in 321 working files and 364 historical file versions. Existing ignore rules exclude local credentials, private resume inputs, research, caches, local runtimes and installed dependencies. This is source-code hosting only; Supabase profile data and other external service data are not copied into GitHub. No application hosting, collaborator invitations or profile changes occurred. Agent prompts were preserved as part of the current source checkpoint.
+
+Use GitHub while signed in to the owner account or an explicitly invited collaborator account. Future source changes require a commit and push; they are not uploaded automatically. Runtime deployment remains a separate task with its existing authentication and acceptance gates. Progress revision 2026-11-01.13 records the publication evidence without changing feature-completion statuses.
+
+## Previous checkpoint: Final Profile save timestamp on the main website (2026-11-01)
 
 2026-11-01: One Final Profile now displays the latest successful snapshot save time in America/New_York, its version and validated current/outdated status. Historical stale saves stay visible without enabling handoff. Loading, never-saved and unavailable timestamp states are explicit. This is a successful-save timestamp, not a button-click audit. No agent prompt, Fact ingestion, approval, persistence or handoff rules changed.
 
