@@ -140,6 +140,7 @@ class Preferences(Contract):
     employment: str = ""
     seniority: str = ""
     prefer_sponsorship: bool = False
+    on_work_visa: bool = False
 
 
 class ApprovedProfile(Contract):

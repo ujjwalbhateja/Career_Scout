@@ -29,6 +29,15 @@ def test_current_profile_preserves_source_and_approval_distinction():
     assert WorkflowRequest(intent="discover", saved_profile_version=profile.version)
 
 
+def test_work_visa_preference_is_optional_and_survives_profile_contract():
+    value = packet()
+    assert ApprovedProfile.model_validate(value).preferences.on_work_visa is False
+    value["preferences"] = {"on_work_visa": True}
+    profile = ApprovedProfile.model_validate(value)
+    assert profile.preferences.on_work_visa is True
+    assert profile.model_dump()["preferences"]["on_work_visa"] is True
+
+
 @pytest.mark.parametrize("change", ["version", "promote", "foreign", "ungrounded", "legacy"])
 def test_current_profile_rejects_mismatched_versions_and_fabricated_approvals(change):
     value = packet()

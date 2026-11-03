@@ -4,6 +4,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import { ArrowDownToLine, ArrowRight, Bookmark, Check, ChevronDown, Compass, ExternalLink, FileText, Globe2, Link2, LoaderCircle, MapPin, RefreshCw, Search, Settings2, ShieldCheck, SlidersHorizontal, X } from 'lucide-react';
 import { suggestRoleKeywords } from '@/lib/matching.mjs';
 import { canonicalJobURL, dedupeEvidence } from '@/lib/job-evidence.mjs';
+import {SEARCH_SESSION_KEY,readSearchSession,completeSearchSession} from '@/lib/search-session.mjs';
 import type {ApplicationJob} from './applications';
 import HandoffReview,{type HandoffReceipt} from './profile/handoff-review';
 
@@ -31,7 +32,7 @@ type ImportResult = {jobs:Job[];message:string;links?:{url:string;title:string}[
 const defaults = {
   roles:'',relatedKeywords:'',mode:'related',requiredKeywords:'',excludedKeywords:'',location:'United States',
   seniority:'any',arrangement:'any',employment:'any',minSalary:'',currency:'USD',period:'year',
-  preferSponsorship:false,includeUnknown:true,searchDescriptions:true,includeUnverified:true,showClosed:false,maxAge:'0',
+  onWorkVisa:false,preferSponsorship:false,includeUnknown:true,searchDescriptions:true,includeUnverified:true,showClosed:false,maxAge:'0',
 };
 type Criteria = typeof defaults;
 type ProfilePlan={selection:{roleId:string;version:string};roleName:string;basis:string;criteria:Partial<Criteria>&{roles:string};handoff?:HandoffReceipt};
@@ -62,8 +63,9 @@ function storedJobs(value:unknown):Job[] {
   return Array.isArray(value)?value.filter(j=>j&&typeof j.id==='string'&&typeof j.title==='string'&&typeof j.company==='string'&&typeof j.description==='string'&&j.salary&&j.sponsorship).slice(0,30):[];
 }
 
-export default function Scout({embedded=false,onPrepare}:{embedded?:boolean;onPrepare?:(job:ApplicationJob)=>void}={}) {
-  const [profilePlan,setProfilePlan]=useState<ProfilePlan|null>(null),[profileError,setProfileError]=useState(''),[profileLoading,setProfileLoading]=useState(false);
+export default function Scout({embedded=false,onPrepare,profileSelection,initialCriteria}:{embedded?:boolean;onPrepare?:(job:ApplicationJob)=>void;profileSelection?:{roleId:string;version:string};initialCriteria?:Partial<Criteria>}={}) {
+  const [profilePlan,setProfilePlan]=useState<ProfilePlan|null>(null),[profileError,setProfileError]=useState(''),[profileLoading,setProfileLoading]=useState(!!profileSelection);
+  const [resultProfileVersion,setResultProfileVersion]=useState<string|null>(null);
   const [handoff,setHandoff]=useState<HandoffReceipt|null>(null);
   const autoStarted=useRef(false);
   const [criteria,setCriteria]=useState<Criteria>(defaults),[ready,setReady]=useState(false),[tab,setTab]=useState('search');
@@ -74,7 +76,7 @@ export default function Scout({embedded=false,onPrepare}:{embedded?:boolean;onPr
   const [sourceOpen,setSourceOpen]=useState(false),[querySnapshot,setQuerySnapshot]=useState('');
   const [url,setUrl]=useState(''),[links,setLinks]=useState<{url:string;title:string}[]>([]),[paste,setPaste]=useState(false);
   const [manual,setManual]=useState({title:'',company:'',location:'',description:''});
-  const [selected,setSelected]=useState<Job|null>(null),[sort,setSort]=useState('relevance');
+  const [selected,setSelected]=useState<Job|null>(null),[sort,setSort]=useState(profileSelection?'newest':'relevance');
   const detailRef=useRef<HTMLDialogElement>(null),requestRef=useRef(0),abortRef=useRef<AbortController|null>(null),profileAbortRef=useRef<AbortController|null>(null);
   const batchesRef=useRef(new Map<number,SearchResult>()),rejectedRef=useRef(new Set<string>());
 
@@ -85,10 +87,11 @@ export default function Scout({embedded=false,onPrepare}:{embedded?:boolean;onPr
   }
   useEffect(()=>{
     try {
-      const current=localStorage.getItem('career-scout.criteria.v2');
-      const stored=JSON.parse(current||localStorage.getItem('career-scout.criteria.v1')||'null');
+      const current=localStorage.getItem(profileSelection?'career-scout.step4.criteria.v1':'career-scout.criteria.v2');
+      const stored=JSON.parse(current||(!profileSelection?localStorage.getItem('career-scout.criteria.v1'):null)||'null');
+      if(!current&&initialCriteria)setCriteria({...defaults,...initialCriteria});
       if(stored&&typeof stored==='object') {
-        const next={...defaults};
+        const next={...defaults,...(!current?initialCriteria:{})};
         for(const key of Object.keys(defaults) as (keyof Criteria)[])if(typeof stored[key]===typeof defaults[key])(next as Record<string,unknown>)[key]=stored[key];
         if(!['exact','related','broad'].includes(next.mode))next.mode='related';
         if(!current){next.searchDescriptions=true;next.relatedKeywords=suggestions(next);}
@@ -96,6 +99,8 @@ export default function Scout({embedded=false,onPrepare}:{embedded?:boolean;onPr
       }
       setSaved(storedJobs(JSON.parse(localStorage.getItem('career-scout.saved.v1')||'null')));
       setImported(storedJobs(JSON.parse(localStorage.getItem('career-scout.imported.v1')||'null')));
+      const completed=readSearchSession(JSON.parse(localStorage.getItem(SEARCH_SESSION_KEY)||'null'));
+      if(completed){batchesRef.current.set(0,completed.result);setJobs(completed.result.jobs);setSummary({...completed.result,hasMore:false});setQuerySnapshot(JSON.stringify(completed.criteria));setResultProfileVersion(completed.profileVersion);setNotice('Last completed search restored from this browser. These jobs have not been rechecked.');}
     } catch {setNotice('Previous browser data could not be restored. You can start a new search.');}
     setReady(true);
     const controller=new AbortController();
@@ -104,17 +109,17 @@ export default function Scout({embedded=false,onPrepare}:{embedded?:boolean;onPr
   },[]);
   useEffect(()=>{
     if(!ready)return;
-    const params=new URLSearchParams(window.location.search),roleId=params.get('profileRole'),version=params.get('profileVersion');
+    const params=new URLSearchParams(window.location.search),roleId=profileSelection?.roleId||params.get('profileRole'),version=profileSelection?.version||params.get('profileVersion');
     if(!roleId&&!version)return;
     const controller=new AbortController();profileAbortRef.current=controller;setProfileLoading(true);setProfileError('');
-    fetch('/api/scout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'profilePlan',profileSelection:{roleId,version}}),signal:controller.signal}).then(async response=>{
+    fetch('/api/scout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'profilePlan',...(profileSelection?criteria:{}),profileSelection:{roleId,version}}),signal:controller.signal}).then(async response=>{
       const plan=await response.json() as ProfilePlan & {error?:string};if(!response.ok)throw new Error(plan.error||'Could not connect your profile.');
       if(controller.signal.aborted)return;
       setProfilePlan(plan);setHandoff(plan.handoff||null);setKeywordsEdited(true);setCriteria(current=>({...current,...plan.criteria,roles:plan.criteria.roles,relatedKeywords:'',mode:'exact'}));
     }).catch(e=>{if(!controller.signal.aborted)setProfileError(e.message||'Could not connect your profile.');}).finally(()=>{if(!controller.signal.aborted)setProfileLoading(false);});
     return()=>controller.abort();
-  },[ready]);
-  useEffect(()=>{if(!ready)return;try{localStorage.setItem('career-scout.criteria.v2',JSON.stringify(criteria));localStorage.setItem('career-scout.saved.v1',JSON.stringify(saved));localStorage.setItem('career-scout.imported.v1',JSON.stringify(imported));}catch{setNotice('Browser storage is full or unavailable. Export your jobs before closing this page.');}},[criteria,saved,imported,ready]);
+  },[ready,profileSelection?.roleId,profileSelection?.version]);
+  useEffect(()=>{if(!ready)return;try{localStorage.setItem(profileSelection?'career-scout.step4.criteria.v1':'career-scout.criteria.v2',JSON.stringify(criteria));localStorage.setItem('career-scout.saved.v1',JSON.stringify(saved));localStorage.setItem('career-scout.imported.v1',JSON.stringify(imported));}catch{setNotice('Browser storage is full or unavailable. Export your jobs before closing this page.');}},[criteria,saved,imported,ready]);
   useEffect(()=>{if(selected&&!detailRef.current?.open)detailRef.current?.showModal();},[selected]);
 
   async function api(payload:unknown):Promise<ImportResult> {
@@ -131,9 +136,11 @@ export default function Scout({embedded=false,onPrepare}:{embedded?:boolean;onPr
     abortRef.current?.abort();
     const controller=new AbortController();abortRef.current=controller;
     const request=++requestRef.current;
+    setResultProfileVersion(profilePlan?.selection.version||null);
     if(!options.more){batchesRef.current=new Map();rejectedRef.current=new Set();setJobs([]);setSummary(null);}
     setBusy(true);setError('');setProgress('Finding individual job listings with Keenable…');setTab('search');setQuerySnapshot(JSON.stringify(criteria));
     let completed=false;
+    let finalResult:SearchResult|null=null;
     const receive=(message:{type:string;message?:string;error?:string;result?:SearchResult;handoff?:HandoffReceipt})=>{
       if(request!==requestRef.current)return;
       if(message.type==='handoff'&&message.handoff)setHandoff(message.handoff);
@@ -150,11 +157,18 @@ export default function Scout({embedded=false,onPrepare}:{embedded?:boolean;onPr
         }
         rejectedRef.current=rejected;
         const merged=mergeJobs(batchesRef.current,rejectedRef.current);
+        finalResult={...result,jobs:merged};
         setJobs(merged);setSummary(result);
         setSelected(old=>old?merged.find(j=>j.id===old.id||canonical(j.url)===canonical(old.url))||old:null);
         setProgress(result.phase==='verifying'?'Checking application pages and updating evidence…':'Collecting search results…');
       }
-      if(message.type==='complete'){completed=true;setProgress('Search complete.');}
+      if(message.type==='complete'){
+        completed=true;setProgress('Search complete.');
+        if(finalResult?.phase==='complete'){
+          const session=completeSearchSession(criteria,finalResult,profilePlan?.selection);
+          if(session){setResultProfileVersion(session.profileVersion);try{localStorage.setItem(SEARCH_SESSION_KEY,JSON.stringify(session));}catch{setNotice('Search completed, but browser storage is unavailable. Export results before leaving.');}}
+        }
+      }
     };
     try {
       const response=await fetch('/api/scout',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/x-ndjson'},body:JSON.stringify({action:'search',stream:true,...criteria,...(profilePlan?{profileSelection:profilePlan.selection}:{}),batch,refresh:!!options.refresh}),signal:controller.signal});
@@ -186,7 +200,8 @@ export default function Scout({embedded=false,onPrepare}:{embedded?:boolean;onPr
   }
   function toggleSave(job:Job){if(saved.some(j=>j.id===job.id))setSaved(s=>s.filter(j=>j.id!==job.id));else if(saved.length>=30)setNotice('Your shortlist holds 30 jobs. Export or remove a saved role before adding another.');else setSaved(s=>[job,...s]);}
   function exportJobs(){const data={schemaVersion:2,exportedAt:new Date().toISOString(),collection:tab,...(tab==='search'&&querySnapshot?{criteria:JSON.parse(querySnapshot)}:{}),jobs:tab==='saved'?saved:tab==='import'?imported:jobs};const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download='career-scout-jobs.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
-  const visible=(tab==='saved'?saved:tab==='import'?imported:jobs).slice().sort((a,b)=>groupOrder(a)-groupOrder(b)||(sort==='newest'?(Date.parse(b.originalPostingDate||b.postedAt||'')||0)-(Date.parse(a.originalPostingDate||a.postedAt||'')||0):0));
+  const visible=(tab==='saved'?saved:tab==='import'?imported:jobs).slice().sort((a,b)=>sort==='newest'?(Date.parse(b.originalPostingDate||b.postedAt||'')||0)-(Date.parse(a.originalPostingDate||a.postedAt||'')||0):groupOrder(a)-groupOrder(b));
+  const usedCriteria=querySnapshot?JSON.parse(querySnapshot) as Criteria:null;
   const changed=!!querySnapshot&&querySnapshot!==JSON.stringify(criteria),savedIds=new Set(saved.map(j=>j.id));
   const batchResults=[...batchesRef.current.values()];
   const usage=batchResults.reduce((total,b)=>({searchRequests:total.searchRequests+(b.usage?.searchRequests||0),fetchRequests:total.fetchRequests+(b.usage?.fetchRequests||0),cacheHits:total.cacheHits+(b.usage?.cacheHits||0)}),{searchRequests:0,fetchRequests:0,cacheHits:0});
@@ -207,7 +222,8 @@ export default function Scout({embedded=false,onPrepare}:{embedded?:boolean;onPr
       {(profileLoading||profileError||profilePlan)&&<section className="notice" aria-live="polite"><div>{profileLoading?'Connecting your approved profile through Master…':profileError||('Profile → Master → Scout: '+profilePlan?.roleName+' · '+profilePlan?.selection.version)}{profilePlan&&<p>Your saved profile provides the evidence for these searches. Review the responsibilities, skills, titles and gaps below.</p>}<a href="/profile">Review my profile</a>{' · '}<button type="button" className="text-button" onClick={detachProfile}>Use manual search</button></div></section>}
       {provider?.configured===false&&<div className="error-message" role="alert">Keenable is not connected on this deployment. The site owner needs to configure the server connection.</div>}
       {sourceOpen&&<section className="source-settings"><div className="section-head"><div><span className="eyebrow">SEARCH COVERAGE</span><h2>Keenable discovery, evidence you can inspect</h2></div><button className="icon-button" aria-label="Close search coverage" onClick={()=>setSourceOpen(false)}><X size={20}/></button></div><div className="source-grid"><div><span className="connection-status"><Globe2 size={18}/>{provider?(provider.configured?'Keenable connected':'Connection needs setup'):providerError||'Checking connection…'}</span><p className="source-copy">Searches individual job pages across the indexed web. Employer application links are preferred when available. General job directories and duplicate copies are filtered.</p><p className="source-copy">Each batch uses up to {provider?.limits?.queries||4} search requests and {provider?.limits?.checks||10} page checks. Search more runs another bounded batch, up to {provider?.limits?.batches||3} batches per search.</p></div><div className="broad-connection"><h3>Know what has been checked</h3><p><strong>Application page available</strong> means readable job evidence was found without a detected closure notice. <strong>Not verified</strong> means the page could not be confirmed. Closed roles are hidden unless you include them.</p><p className="source-copy">Posting dates come from job evidence. Index dates show when a search engine collected a page; they do not prove a vacancy is new.</p></div></div><div className="coverage-note">Coverage is bounded and cannot guarantee every job or current hiring activity. Direct Greenhouse, Lever, Ashby, and structured-page imports remain available under Import a role. Salary, eligibility, and sponsorship stay unknown when the source does not say.</div></section>}
-      {profilePlan&&handoff&&<HandoffReview handoff={handoff}/>}
+      {profilePlan&&handoff&&<details><summary>Profile information passed to Master and Scout</summary><HandoffReview handoff={handoff}/></details>}
+      {tab==='search'&&summary&&usedCriteria&&<section className="ss-used" aria-label="Requirements used for these search results"><strong>Requirements used for these results</strong><dl><dt>Roles</dt><dd>{usedCriteria.roles||'Saved profile responsibilities and skills'}</dd><dt>Location</dt><dd>{usedCriteria.location||'United States'}</dd><dt>Salary</dt><dd>{usedCriteria.minSalary?`${usedCriteria.minSalary} ${usedCriteria.currency} / ${usedCriteria.period} minimum; overlapping ranges may qualify`:'No salary minimum'}</dd><dt>Visa filter</dt><dd>{usedCriteria.onWorkVisa?'Exclude explicit sponsorship refusals; unstated policies remain':'No sponsorship-refusal filter'}</dd><dt>Searched</dt><dd>{checkedLabel(summary.searchedAt)}</dd></dl><p>{summary.phase==='complete'?'Completed results are retained in this browser when storage is available.':'These results are provisional while checks finish.'} Availability and unspecified details still need checking.</p>{resultProfileVersion&&profilePlan&&resultProfileVersion!==profilePlan.selection.version&&<p role="status">Your profile has changed since these results. Run a new search to use the latest approved information.</p>}</section>}
       <div className={tab==='search'?'workspace':'workspace single'}>
         {tab==='search'&&<aside className="filters"><form onSubmit={e=>runSearch(e)}>
           <div className="filter-title"><SlidersHorizontal size={18}/><h2>Your search criteria</h2></div>
@@ -220,7 +236,8 @@ export default function Scout({embedded=false,onPrepare}:{embedded?:boolean;onPr
           <label className="field-label" htmlFor="seniority">Seniority</label>{select('seniority',['any','intern','junior','mid','senior','lead','manager','director'])}
           <div className="two-fields"><div><label className="field-label" htmlFor="arrangement">Work arrangement</label>{select('arrangement',['any','remote','hybrid','on-site'])}</div><div><label className="field-label" htmlFor="employment">Employment type</label>{select('employment',['any','full-time','part-time','contract','internship'])}</div></div>
           <label className="field-label" htmlFor="minSalary">Minimum compensation</label><div className="pay-row"><select aria-label="Currency" value={criteria.currency} onChange={e=>field('currency',e.target.value)}>{['USD','EUR','GBP','CAD','AUD','INR'].map(c=><option key={c}>{c}</option>)}</select><input id="minSalary" type="number" min="0" max="100000000" value={criteria.minSalary} onChange={e=>field('minSalary',e.target.value)} placeholder="No minimum"/><select aria-label="Pay period" value={criteria.period} onChange={e=>field('period',e.target.value)}><option value="year">/ year</option><option value="hour">/ hour</option></select></div><small className="helper">Currencies and pay periods are not converted.</small>
-          <label className="check-row sponsorship-option"><input type="checkbox" checked={criteria.preferSponsorship} onChange={e=>field('preferSponsorship',e.target.checked)}/><span><strong>Prefer visa sponsorship</strong><small>Prioritize explicit support. Roles with no sponsorship remain visible and flagged.</small></span></label>
+          <label className="check-row sponsorship-option"><input type="checkbox" checked={criteria.onWorkVisa} onChange={e=>field('onWorkVisa',e.target.checked)}/><span><strong>I am on a work visa</strong><small>Exclude jobs explicitly stating no visa sponsorship. Unstated or conflicting policies remain visible for review.</small></span></label>
+          <label className="check-row sponsorship-option"><input type="checkbox" checked={criteria.preferSponsorship} onChange={e=>field('preferSponsorship',e.target.checked)}/><span><strong>Prefer visa sponsorship</strong><small>Rank explicit support higher. The work-visa option above controls exclusions.</small></span></label>
           <details className="refine"><summary>Evidence and freshness <ChevronDown size={15}/></summary><label className="check-row"><input type="checkbox" checked={criteria.includeUnverified} onChange={e=>field('includeUnverified',e.target.checked)}/><span>Include unverified leads</span></label><label className="check-row"><input type="checkbox" checked={criteria.showClosed} onChange={e=>field('showClosed',e.target.checked)}/><span>Show closed listings</span></label><label className="check-row"><input type="checkbox" checked={criteria.includeUnknown} onChange={e=>field('includeUnknown',e.target.checked)}/><span>Keep jobs with missing filter details</span></label><label className="check-row"><input type="checkbox" checked={criteria.searchDescriptions} onChange={e=>field('searchDescriptions',e.target.checked)}/><span>Match role keywords in descriptions too</span></label><label className="field-label" htmlFor="maxAge">Employer posting date</label><select id="maxAge" value={criteria.maxAge} onChange={e=>field('maxAge',e.target.value)}><option value="0">Any time</option><option value="3">Within 3 days</option><option value="7">Within 7 days</option><option value="14">Within 14 days</option><option value="30">Within 30 days</option></select></details>
           <button className="primary search-submit" disabled={!ready||provider?.configured===false}><Search size={18}/>{busy?'Start a new search':'Find opportunities'}<ArrowRight size={17}/></button><small className="filter-footer">Powered by Keenable · Exact titles first</small>
         </form></aside>}
@@ -232,7 +249,7 @@ export default function Scout({embedded=false,onPrepare}:{embedded?:boolean;onPr
           {tab==='search'&&progress&&<div className={'search-progress '+(busy?'is-busy':'')} role="status" aria-live="polite">{busy?<LoaderCircle className="spin" size={17}/>:<Check size={17}/>}<span>{progress}</span>{busy&&<button type="button" onClick={cancelSearch}>Cancel search</button>}</div>}
           {tab==='search'&&summary&&<details className="coverage"><summary><Globe2 size={15}/>{batchResults.reduce((n,b)=>n+(b.scanned||0),0)} search hits reviewed · {batchResults.reduce((n,b)=>n+(b.duplicates||0),0)} duplicate copies combined<ChevronDown size={15}/></summary><div className="coverage-body"><p>{summary.cache?.hit?'Recent cached results':'Results retrieved'} {checkedLabel(summary.searchedAt)}. {summary.cache?.expiresAt&&`Cache expires ${checkedLabel(summary.cache.expiresAt)}.`}</p><div className="usage-line"><span>{usage.searchRequests} search requests</span><span>{usage.fetchRequests} page checks</span><span>{usage.cacheHits} cache hits</span><span>{credits===null?'Credits: not reported':`${credits} credits reported`}</span></div><p>Request counts and credit charges are different. Cached results may reuse earlier page checks.</p>{batchResults.flatMap((b,bi)=>(b.reports||[]).map((r,ri)=><div className="source-report" key={`${bi}-${ri}`}><span>{r.name}</span><span className={r.status==='error'?'error-text':''}>{r.status==='ok'?`${r.count} results`:r.error||r.status}</span></div>))}{Object.keys(summary.excluded||{}).length>0&&<p>Excluded in this batch: {Object.entries(summary.excluded).map(([key,value])=>`${key} (${value})`).join(' · ')}. A job may fail multiple filters.</p>}{!!summary.queries?.length&&<details className="query-details"><summary>Queries used in this batch</summary><ul>{summary.queries.map((query,i)=><li key={i}>{query}</li>)}</ul></details>}<p>{summary.coverage}</p></div></details>}
           {tab==='import'&&imported.length>0&&<p className="results-note">Imported directly; search filters have not been applied. Up to 30 imports are kept in this browser.</p>}{tab==='saved'&&<p className="results-note">Saved in this browser. These are saved snapshots; check the original listing before applying.</p>}
-          {visible.length>0?<div className="job-list">{visible.map((job,index)=><Fragment key={job.id}>{job.group&&(index===0||visible[index-1].group!==job.group)&&<h3 className="scout-group-heading">{groupLabels[job.group]}</h3>}<article className="job-card">
+          {visible.length>0?<div className="job-list">{visible.map((job,index)=><Fragment key={job.id}>{sort!=='newest'&&job.group&&(index===0||visible[index-1].group!==job.group)&&<h3 className="scout-group-heading">{groupLabels[job.group]}</h3>}<article className="job-card">
             <div className="job-top"><div className="company-avatar" aria-hidden="true">{job.company.slice(0,2).toUpperCase()}</div><div className="job-main"><span className="company-name">{job.company}</span><button className="job-title" onClick={()=>setSelected(job)}>{job.title}</button></div><button className={'save-button '+(savedIds.has(job.id)?'is-saved':'')} onClick={()=>toggleSave(job)} aria-label={savedIds.has(job.id)?`Remove ${job.title} from shortlist`:`Save ${job.title}`} aria-pressed={savedIds.has(job.id)}><Bookmark size={19} fill={savedIds.has(job.id)?'currentColor':'none'}/></button></div>
             <div className="job-meta"><span><MapPin size={14}/>{job.location}</span>{job.arrangement!=='unknown'&&<span>{labels[job.arrangement]||job.arrangement}</span>}{job.employment!=='unknown'&&<span>{labels[job.employment]||job.employment}</span>}</div>
             <div className="job-pay">{job.salary.text||'Pay not disclosed'}</div>

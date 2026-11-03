@@ -45,6 +45,26 @@ test('resume-only current profile requires no repeated approval, model analysis 
   assert.equal(canonicalJSON(f.record.state),before);assert.equal(f.writes,0);assert.equal(f.record.state.snapshots.length,0);
 });
 
+test('explicit work-visa preferences survive storage, same-version handoff and Python conversion without changing facts',async()=>{
+  const f=await fixture({questions:false}),originalFacts=structuredClone(f.record.state.facts);
+  await f.service.action({action:'preferences',revision:f.record.revision,search:{onWorkVisa:true,location:'United States'}});
+  const preview=await previewProfileScout(f.service,{version:'current'});
+  assert.equal(preview.plan.criteria.onWorkVisa,true);
+  assert.equal(preview.handoff.summary.preferences.onWorkVisa,true);
+  const packet=await pythonProfileLoader(f.service)(preview.plan.selection.version);
+  assert.equal(packet.preferences.on_work_visa,true);
+  const overridden=await previewProfileScout(f.service,preview.plan.selection,{onWorkVisa:false});
+  assert.equal(overridden.plan.criteria.onWorkVisa,false);
+  assert.equal(overridden.plan.selection.version,preview.plan.selection.version);
+  assert.notEqual(overridden.handoff.planHash,preview.handoff.planHash);
+  assert.deepEqual(overridden.plan.scoutContext,preview.plan.scoutContext);
+  // Older preference forms cannot silently reset the user's stored selection.
+  await f.service.action({action:'preferences',revision:f.record.revision,search:{location:'New York'}});
+  assert.equal(f.record.state.preferences.search.onWorkVisa,true);
+  assert.deepEqual(f.record.state.facts,originalFacts);
+  assert.equal(f.record.state.snapshots.length,0);
+});
+
 test('Builder approval flows through database reload, Master and Scout without finalization; original resume records are unchanged',async()=>{
   const f=await fixture(),originalFacts=structuredClone(f.record.state.facts),originalSnapshots=structuredClone(f.record.state.snapshots);
   let saved;

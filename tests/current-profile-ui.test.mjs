@@ -21,6 +21,7 @@ function render(step){
     if(name==='@/lib/profile/builder-expansion.mjs')return builder;
     if(name==='@/data/scout-progress.json')return {default:{tasks:[]}};
     if(name.endsWith('.css'))return {};
+    if(name==='./search-step')return {default:props=>React.createElement('div',{'data-profile-version':props.version},'Your next opportunities.')};
     if(name.startsWith('./')||name.startsWith('../'))return {default:()=>null};
     return require(name);
   };
@@ -36,7 +37,8 @@ test('Builder offers direct continuation from stored profile without Final Profi
 });
 test('research view accepts a current stored profile with no saved snapshots',()=>{
   const html=render('Search');
-  assert.match(html,/Master asks Profile Agent for your latest stored profile/);
-  assert.match(html,/Send to Master &amp; start job research/);
+  assert.match(html,/Your next opportunities/);
+  assert.match(html,/data-profile-version="current-a{64}"/);
+  assert.match(html,/STEP 04 OF 04/);
   assert.doesNotMatch(html,/Save the Final Profile|One Final Profile/);
 });

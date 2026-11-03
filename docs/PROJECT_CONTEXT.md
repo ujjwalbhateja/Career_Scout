@@ -2,7 +2,41 @@
 
 Updated 2026-11-03, America/New_York. Repository/app root: `C:\Users\ujjwa\job_search`.
 
-## Latest checkpoint: current workflow published to GitHub (2026-11-03)
+## Latest checkpoint: Scout and Master prompts aligned with Step 4 (2026-11-03)
+
+At the user's request, updated only `backend/src/career_scout/agents/scout/prompt.md` and `backend/src/career_scout/agents/master/prompt.md`. Existing instructions remain in place. Added the Step 4 requirements/results presentation contract, effective search preferences and defaults, partial salary-range matching, explicit sponsorship-refusal handling, newest-first display versus match groups, and the distinction between reviewed snapshots, restored browser results, partial leads and completed searches.
+
+Both prompts retain the current Profile -> Master -> Scout route, same-version receipt checks, eligible resume information plus approved Builder additions, source-only evidence, privacy and no separate Final Profile save or repeated resume approval. Opening Step 4 is a preview, not authorization for a new search. Changed filters/profile content require a new search; old results must keep their original criteria and version. Browser-local job storage must not be described as a Supabase profile save or durable cross-device storage. Application preparation remains separate.
+
+The Scout prompt still follows the invoked runtime schema: its Gemini planning stage selects exact supplied candidate terms; only the configured provider returns actual vacancies. Master remains a deterministic coordinator whose prompt documents policy rather than changing routing code. These edits do not change extraction, approvals, search implementation, profile records or other agents' prompts.
+
+No additional agent prompt needs updating for this Step 4 change. Profile and Memory already cover current authoritative retrieval and approved additions. Fact Agent, Profile Builder, Matcher, Tailor, Critic and Application Storage keep their existing responsibilities. Do not extend prompt edits to those agents without a relevant workflow change and user authorization.
+
+Validation: 70 targeted Node checks passed using the updated Scout prompt, covering source-term selection, current-profile loading, handoff guards, discovery policy, visa filtering, Step 4 result persistence/rendering and Markdown loading. This is local automated validation, not a new Gemini/provider search, visual acceptance or hosted deployment. No real profile writes or Git push occurred. Progress revision: `2026-11-03.8`.
+
+## Previous checkpoint: Step 4 search requirements and shortlist (2026-11-03)
+
+Step 4 is now **Search & shortlisted jobs**, with the search requirements and source-linked results on the Career Scout profile page. Jobs navigation and existing Jobs deep links enter this step. Scout obtains the current saved profile through the existing Profile/Master preview; the server still validates the version when a search starts. Fact Agent, Profile Builder, their prompts and approval/storage workflows are unchanged.
+
+The local preview shows the ten previously reviewed openings as a dated research snapshot, with salary ranges, location, relevant areas, gaps and employer links. Unknown sponsorship stays unknown; ranges that only partly reach the salary minimum are labeled. This is not a new live search or a score for the current profile. Public job evidence is kept in ignored research/step4-shortlist.json, loaded only for loopback development by build/reviewed-shortlist-plugin.mjs; production exports null and does not bundle that local research. Without a snapshot the page opens the live search controls directly.
+
+Search controls start with the requested New York/New Jersey/SF Bay Area/US remote, $180,000 USD/year and explicit-sponsorship-refusal filter for this local review, then retain edits separately. Profile-derived role titles come from the saved database profile. New requests keep the existing API, provenance, visa checks and handoff guards. No automatic paid research is triggered just by visiting Step 4. Completed search results retain the exact input criteria and content version in browser storage (not Supabase); changed filters or profile versions require a new search. Partial or failed streams do not overwrite the last completed saved search. Bookmarks, import, export and application actions remain available.
+
+Validation: 661 Node checks, TypeScript and production build passed; focused tests cover result snapshots, Step 4 rendering, current profile selection, uncertainty labels and production exclusion of local research. Page and frontend modules return HTTP 200. Browser inspection showed the new navigation, but minimized-window/input limitations prevented full visual click-through. User acceptance and hosted publication remain separate. No profile writes, new model/search calls, Git push or hosted deployment were performed for this frontend change. Progress revision: 2026-11-03.7.
+
+Local page: http://127.0.0.1:5173/?step=Search . If first-time local sign-in returns to the home page, select **04 Search & shortlisted jobs**.
+
+## Previous checkpoint: optional work-visa search preference (2026-11-03)
+
+Added **I am on a work visa** to Scout search filters. The user requested an optional parameter, not a change to their personal immigration status; it remains off unless selected. When enabled, jobs explicitly refusing employment visa sponsorship are excluded. Unstated or conflicting policies remain eligible for review and are not labeled as sponsorship offers. A general work-authorization requirement or an application question alone does not establish a refusal. Existing **Prefer visa sponsorship** remains a separate ranking preference.
+
+The preference is carried through search criteria, cache identity, Profile/Master/Scout handoff receipts and the Python Preferences contract. Saved preferences preserve the value when an older form omits the field. Employer-page refusals remove provisional streamed results. Changing the search override binds a new plan receipt without changing the current professional profile content. Only the Scout prompt changed; Fact/Builder extraction, their prompts, approval rules and other agent prompts are unchanged.
+
+Validation: the full Node regression suite, 50 Python tests, TypeScript, targeted Ruff and production build passed. New extraction, filtering, rendering, persistence and handoff tests cover opt-in defaults, explicit refusals, unknown/conflicting policies, unrelated negation, authorization-only wording, application questions, strict-detail compatibility, cache separation and streamed lead removal. Authenticated read-only previews carried the preference without changing the entire stored profile. The idle local services were restarted to load the Python contract; pipeline health, page, compiled Scout module and profile preview returned HTTP 200. No real profile writes, approvals, model requests, live job searches, Git push or hosted deployment occurred. Visual browser/user acceptance is still separate. Progress revision: `2026-11-03.6`.
+
+Local page: http://127.0.0.1:5173/ . Open **Jobs** and select the new checkbox in search filters. The local website is running; GitHub and hosted versions have not been updated for this change.
+
+## Previous checkpoint: current workflow published to GitHub (2026-11-03)
 
 At the user's request, pushed source commit `efdbb907f7f1c7992f3d5083ca2ed2bf5b7fa64d` to `main` in https://github.com/ujjwalbhateja/Career_Scout. GitHub confirmed that the repository is public. The 39-file source checkpoint contains the current factual-profile save/retrieval implementation, related regression tests and documentation, and exactly five updated agent prompts: Profile, Memory, Master, Scout and Profile Builder. Fact, Matcher, Tailor, Critic and Application Storage prompts are unchanged.
 

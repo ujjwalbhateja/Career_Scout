@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "revision": "2026-11-03.5",
+  "revision": "2026-11-03.8",
   "reviewedOn": "2026-11-03",
   "summary": "Profile Builder expands one Factual Profile with role-specific experience and skills questionnaires. Exact approved additions save through Profile to Supabase immediately and are verified by reloading storage. Master loads the current source-backed resume information and confirmed additions through Profile, then passes the same content version to Scout when research starts. One Final Profile and repeated resume approval are no longer required. Fact/Builder extraction, decisions and prompts remain unchanged. Local validation, real-user acceptance and hosted publication remain distinct.",
   "framework": {
@@ -3339,6 +3339,60 @@
       ],
       "evidence": "2026-11-03: All 633 Node tests, 49 Python tests, TypeScript and Ruff passed. Tests cover exact approvals through save/reload to Master and Scout, resume-only research without reapproval/finalization, rejected and draft exclusions, separately approved revisions, failed writes/read-backs, retry idempotency, stale dispatches, unavailable sources, foreign approvals, forged context, JSONB ordering, Python boundary contracts and rendered UI. Authenticated live read-only checks after restarting the local app returned HTTP 200 for profile preview, old-bookmark preview, the page and compiled workspace; the Python pipeline is healthy. All six existing approved Builder additions are available alongside 55 professional resume-source records. The complete real profile remains identical at revision 194 and all 16 protected Fact/Builder files are unchanged. No real approval, profile write, model request or job search occurred. The final production build completed with exit code 0; seven progress/architecture checks also passed.",
       "source": "lib/profile/current-profile.mjs"
+    },
+    {
+      "id": "scout-work-visa-filter",
+      "owner": "scout",
+      "title": "Optional work-visa filter for explicit sponsorship refusals",
+      "dependsOn": [
+        "keenable"
+      ],
+      "stage": "discovery",
+      "status": "in_review",
+      "acceptance": "An explicit work-visa preference excludes jobs that state employment visa sponsorship is unavailable. Unknown or conflicting policies remain eligible for review. Work authorization wording alone does not imply refusal. Off by default, separate from sponsorship ranking, preserved through Profile/Master/Scout and Python boundaries, without changing approved professional facts.",
+      "detail": "Added an optional I am on a work visa checkbox to Scout. Search criteria, cache identity and handoff receipts carry the preference. Employer-page refusals remove streamed leads. Explicit saved preferences retain their value when older forms omit the field. Only the Scout prompt changes; Fact/Builder extraction and all other prompts are preserved.",
+      "blockers": [
+        "Hosted deployment and user browser acceptance remain separate."
+      ],
+      "notes": [
+        "2026-11-03: User requested an additional search preference, not an assertion of their own visa status. The preference remains off unless explicitly selected. No real profile mutation, new model request or live job search is needed for implementation."
+      ],
+      "outputLinks": [
+        {
+          "label": "Scout search",
+          "url": "/"
+        }
+      ],
+      "evidence": "2026-11-03: Full Node regression suite, 50 Python tests, TypeScript, Ruff and production build passed. New checks cover explicit refusal extraction, unrelated negation, application questions, conflicting policies, opt-in defaults, strict-detail compatibility, independent checkbox rendering, streamed lead removal, cache separation, saved preference preservation and same-version Profile/Master/Scout plus Python handoffs. Authenticated read-only preview carries the preference without changing the stored profile. After reloading the idle local services, pipeline health, page, client module and profile preview returned HTTP 200. Fact/Builder extraction and every prompt except Scout remain unchanged. No real profile writes, model calls or live vacancy search occurred; visual browser acceptance and hosted deployment remain separate.",
+      "source": "lib/scout.mjs; lib/matching.mjs; app/scout.tsx; lib/workflow/scout-handoff.mjs"
+    },
+    {
+      "id": "scout-step4-shortlist",
+      "owner": "scout",
+      "title": "Step 4 search requirements and shortlisted opportunities",
+      "dependsOn": [
+        "keenable",
+        "scout-work-visa-filter"
+      ],
+      "stage": "discovery",
+      "status": "in_review",
+      "acceptance": "Step 4 displays the search requirements and source-linked job results, obtains current profile context through Profile and Master, preserves completed results with their original filters, and distinguishes dated research from new search results. Changing filters or profile version does not relabel old results.",
+      "detail": "Embedded Scout in Step 4. Jobs navigation and legacy Jobs links enter Step 4. Local reviewed job evidence is separate from new searches and excluded from production bundles. New searches preserve source links, salary ranges, unknown sponsorship and fit gaps. Completed searches are browser-local and partial responses cannot overwrite a completed saved search.",
+      "blockers": [
+        "User visual acceptance and hosted deployment remain separate."
+      ],
+      "notes": [
+        "2026-11-03: Frontend-only integration. Fact/Builder prompts, extraction, approvals and profile storage rules unchanged. Loading Step 4 previews the stored profile but does not automatically run a paid search.",
+        "2026-11-03: User-requested Scout and Master prompt alignment added Step 4 effective criteria, salary/visa uncertainty, newest-first presentation, same-version context and reviewed/restored/partial/completed result distinctions. Other agent prompts and runtime implementation unchanged."
+      ],
+      "outputLinks": [
+        {
+          "label": "Search and shortlisted jobs",
+          "url": "/?step=Search"
+        }
+      ],
+      "evidence": "2026-11-03: 661 Node tests, TypeScript and production build passed. Focused tests cover Step 4 render and current-version handoff, immutable result criteria, rejection of partial/corrupt/unsafe cached results, salary/visa/date uncertainty and exclusion of local research from production builds. Local page and transformed frontend modules returned HTTP 200. Native browser inspection confirmed the new step in navigation; minimized-window/input limitations prevented full interactive visual acceptance. Prompt alignment: 70 targeted Node checks passed with the updated Scout prompt; no new model/provider calls or profile writes. Master remains deterministic and its prompt does not implement new routing.",
+      "source": "app/profile/search-step.tsx; app/scout.tsx; lib/search-session.mjs"
     }
   ],
   "communication": [
@@ -3655,6 +3709,21 @@
       "date": "2026-11-03",
       "title": "Public GitHub source update: current factual profile and five aligned prompts",
       "detail": "2026-11-03: At the user's request, pushed source commit efdbb907f7f1c7992f3d5083ca2ed2bf5b7fa64d to main in the public ujjwalbhateja/Career_Scout repository. The 39-file checkpoint includes the current-profile implementation, tests, documentation and exactly five prompt updates (Profile, Memory, Master, Scout and Profile Builder). Fact, Matcher, Tailor, Critic and Application Storage prompts are unchanged. Local and remote main were synchronized before the fast-forward push. Scanned 329 source files with no credential-pattern/configured-secret matches or private-input files; staged contents matched the reviewed files. The final five-prompt audit passed 95 Node checks and 49 Python tests, and the production build passed during prompt alignment. No feature statuses were promoted. Private resumes, credentials, local diagnostics/runtimes and external profile data were not uploaded; no hosted deployment or job search occurred."
+    },
+    {
+      "date": "2026-11-03",
+      "title": "Optional work-visa sponsorship exclusion",
+      "detail": "Full Node regression suite, 50 Python tests, TypeScript, targeted Ruff and production build passed. Synthetic checks cover explicit employment sponsorship refusals, unknown/conflicting policies, authorization-only wording, application questions, opt-in behavior, independent UI selection, streamed result removal, cache identity, stored preference preservation and both agent boundaries. Live read-only Profile/Master preview carries onWorkVisa while preserving the entire stored profile; restarted local service health, page, client module and preview returned HTTP 200. Only the Scout prompt changed. No user visa preference was inferred or saved, and no real approvals, model requests, job searches, Git push or hosted deployment occurred. User browser acceptance remains separate."
+    },
+    {
+      "date": "2026-11-03",
+      "title": "Step 4 requirements and shortlist: local implementation",
+      "detail": "2026-11-03: 661 Node tests, TypeScript and production build passed. Focused tests cover Step 4 render and current-version handoff, immutable result criteria, rejection of partial/corrupt/unsafe cached results, salary/visa/date uncertainty and exclusion of local research from production builds. Local page and transformed frontend modules returned HTTP 200. Native browser inspection confirmed the new step in navigation; minimized-window/input limitations prevented full interactive visual acceptance."
+    },
+    {
+      "date": "2026-11-03",
+      "title": "Step 4 Scout and Master prompt alignment",
+      "detail": "70 targeted Node checks passed: actual Scout prompt consumption and source-term selection, current-profile retrieval, same-version handoffs, discovery policy, visa filtering, Step 4 snapshots/rendering and Markdown asset loading. Only Scout and Master prompts changed. No Gemini/live search, profile mutation, Git push or hosted deployment. Existing visual/user acceptance limits remain."
     }
   ]
 }

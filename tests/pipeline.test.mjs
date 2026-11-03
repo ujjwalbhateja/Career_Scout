@@ -40,9 +40,9 @@ test('Critic checks are independent and omit owner identifiers from model input'
 });
 test('Scout keeps source terms in bounded routes and never sends a full profile',async()=>{
   let body;
-  const result=await runProvider({name:'search_jobs',owner:'scope',payload:{role_name:'',scout_context:{profileId:'master-profile',basis:'validated_source_data',roleName:'',titles:[],functions:[],responsibilities:[{term:'reporting',factIds:['f1']}],skills:[],industries:[],qualifications:[],approvedFactIds:['f1']},keywords:[],preferences:{location:'Boston',arrangement:'onsite'}},prompt:''},{KEENABLE_API_KEY:'private'},{search:async input=>{body=input;return {jobs:[{id:'j1',title:'Analyst',company:'Example',url:'https://example.com/job',description:'Responsibilities include reporting and client support. Apply to this actual synthetic employer vacancy. '.repeat(2),verification:{status:'available'}},{id:'j2',verification:{status:'unverified'}}]};}});
+  const result=await runProvider({name:'search_jobs',owner:'scope',payload:{role_name:'',scout_context:{profileId:'master-profile',basis:'validated_source_data',roleName:'',titles:[],functions:[],responsibilities:[{term:'reporting',factIds:['f1']}],skills:[],industries:[],qualifications:[],approvedFactIds:['f1']},keywords:[],preferences:{location:'Boston',arrangement:'onsite',on_work_visa:true}},prompt:''},{KEENABLE_API_KEY:'private'},{search:async input=>{body=input;return {jobs:[{id:'j1',title:'Analyst',company:'Example',url:'https://example.com/job',description:'Responsibilities include reporting and client support. Apply to this actual synthetic employer vacancy. '.repeat(2),verification:{status:'available'}},{id:'j2',verification:{status:'unverified'}}]};}});
   assert.equal(body.relatedKeywords,'');assert.equal(body.arrangement,'on-site');assert.equal(body.requiredKeywords,undefined);
-  assert.equal(body.profile,undefined);assert.equal(result.jobs.length,1);
+  assert.equal(body.profile,undefined);assert.equal(body.onWorkVisa,true);assert.equal(result.jobs.length,1);
 });
 test('Gemini transport uses constrained JSON and rejects truncated or blocked output',async()=>{
   let sent;

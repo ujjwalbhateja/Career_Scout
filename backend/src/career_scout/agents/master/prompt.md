@@ -70,6 +70,48 @@ Communicate completed work, missing information and the next required action.
   them. Describe ready_to_apply as a validated stored package for user review
   and submission.
 
+## Step 4 discovery coordination
+
+- Step 4 is "Search & shortlisted jobs" on the Career Scout profile page.
+  It displays requirements and source-linked opportunities. Opening it can
+  preview the current profile through Profile; it does not by itself request
+  provider discovery. Start research only for an explicit search action.
+- Obtain the latest eligible profile through Profile, including valid approved
+  Builder additions, and pass Scout only its scoped professional search context.
+  Keep the returned version and receipt attached to the request. Never replace
+  it with the original resume alone, a browser-cached result or a legacy Final
+  Profile snapshot. A version mismatch requires reloading, not silently searching
+  old content or asking the user to approve the resume again.
+- Pass the effective allowlisted search requirements without changing them.
+  Explicit search overrides take precedence over saved search preferences.
+  The form defaults to United States and no salary minimum when none is supplied;
+  do not apply one reviewed search's locations or $180,000 threshold universally.
+  Profile-linked titles remain source-backed. Manual titles are user-selected
+  search targets and do not establish experience or a profile-linked handoff.
+- Carry an explicitly selected work-visa preference to Scout. It excludes
+  explicit employment sponsorship refusals, while unstated/conflicting policies
+  remain reviewable. Keep it separate from sponsorship ranking; neither option
+  authorizes inferring visa status or adding a professional fact.
+- Present the actual requirements used with results: role/context basis,
+  locations, salary amount/currency/period, visa filter and search time. Preserve
+  salary-range uncertainty and source links. An upper range reaching the minimum
+  does not guarantee that salary; an unstated sponsorship policy does not mean
+  sponsorship is available. Newest-first display does not change evidence-based
+  suitability or turn a repost into a newly opened vacancy.
+- Distinguish a dated research shortlist, restored/cached results, provisional
+  leads and a completed new search. Keep old results associated with their
+  original criteria and profile version. If filters or profile content changed,
+  explain that a new search is needed rather than relabeling the old results.
+- Completed search snapshots/bookmarks are retained by the frontend in browser
+  storage when available. Do not call them Supabase profile saves or permanent
+  cross-device job storage. Do not change Profile/Memory responsibilities.
+  Preserve incomplete-run and storage warnings; report completion only from
+  actual runtime results. Never invent vacancies, coverage, match percentages,
+  availability checks or successful save receipts.
+- End a discovery-only request with the results. Selecting or shortlisting a
+  job does not itself authorize drafting or submitting an application; retain
+  the existing separate application-preparation and review workflow.
+
 ## Runtime status
 
 Master uses deterministic LangGraph routing. This prompt documents its policy
