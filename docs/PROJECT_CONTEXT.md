@@ -2,7 +2,15 @@
 
 Updated 2026-11-03, America/New_York. Repository/app root: `C:\Users\ujjwa\job_search`.
 
-## Latest checkpoint: agent prompts aligned with the current profile workflow (2026-11-03)
+## Latest checkpoint: current workflow published to GitHub (2026-11-03)
+
+At the user's request, pushed source commit `efdbb907f7f1c7992f3d5083ca2ed2bf5b7fa64d` to `main` in https://github.com/ujjwalbhateja/Career_Scout. GitHub confirmed that the repository is public. The 39-file source checkpoint contains the current factual-profile save/retrieval implementation, related regression tests and documentation, and exactly five updated agent prompts: Profile, Memory, Master, Scout and Profile Builder. Fact, Matcher, Tailor, Critic and Application Storage prompts are unchanged.
+
+The current workflow saves approved Builder additions through Profile, verifies storage by reloading, and makes the same current profile available to Master and Scout without a separate Final Profile save or repeated resume approval. Local state and Git history were preserved. Local and remote `main` were synchronized before the fast-forward push.
+
+Publication checks: scanned 329 source files with no credential-pattern or configured-secret matches and no private-input files in the upload. Verified that all 39 staged files matched their reviewed contents. The final five-prompt audit passed 95 Node checks and 49 Python tests; the production build passed during prompt alignment. Earlier implementation validation and the read-only live profile check are documented below. Private resumes, credentials, `.local/` diagnostics, installed runtimes and external Supabase profile records were not uploaded. This is a GitHub source update; no hosted application deployment or job search occurred. Progress revision `2026-11-03.5` records this publication without changing feature acceptance statuses.
+
+## Previous checkpoint: agent prompts aligned with the current profile workflow (2026-11-03)
 
 The user's intended scope is the five agents in the review table: Profile, Memory, Master, Scout and Profile Builder. Updated `backend/src/career_scout/agents/{profile,memory,master,scout,profile_builder}/prompt.md` to describe the implemented current-profile flow. Profile owns immediate Builder saves and verifies them by reloading authoritative storage. Master obtains the current eligible profile through Profile, then supplies professional search context from that same version to Scout when research is requested. No separate Final Profile save or repeated resume approval is required.
 
