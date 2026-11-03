@@ -4,6 +4,7 @@ import './completion.css';
 export type HandoffReceipt={
   id:string;stage:string;at:string;profileVersion:string;roleId:string;roleName:string;planHash:string;snapshotSavedAt?:string;
   persistence?:{saved:boolean;savedAt?:string};
+  profileReceipt?:{profileVersion:string;snapshotId:string;contentHash:string;loadedAt:string};
   summary:{questionnaireFactCount?:number;resumeFactCount?:number;approvedFactCount:number;professionalFactCount:number;sourceCategories:{category:string;count:number}[];titles:string[];responsibilities:string[];industries:string[];specialistSkills:string[];functionName:string;qualifications:string[];preferences:Record<string,unknown>;gaps:{missingSearchContext?:string[];unsupportedRoleRequirements?:number;unresolvedQuestionCount?:number;pendingFactCount?:number};plannedRoutes:string[];recency:string};
   audit?:{from:string;to:string;kind:string}[];result?:{jobs:number};
 };
@@ -13,9 +14,10 @@ export default function HandoffReview({handoff}:{handoff:HandoffReceipt}){
   const terms=(label:string,values:string[])=> <div><dt>{label}</dt><dd>{values.length?values.join(' · '):'No approved source terms available'}</dd></div>;
   return <article className="cw-handoff-review" aria-label="Profile to Master to Scout handoff">
     <h3>{stage==='preview'?'What Master will send to Scout':stage==='completed'?'Scout research completed':stage==='failed'?'Scout research did not finish':'Master sent this profile to Scout'}</h3>
-    <p><strong>{handoff.profileVersion}</strong> · {handoff.roleName}</p>
+    <p><strong>{handoff.profileVersion.startsWith('current-')?'Current stored profile':handoff.profileVersion}</strong> · {handoff.roleName}</p>
+    {handoff.profileReceipt&&<p>Master loaded and verified {handoff.profileVersion.startsWith('current-')?'your current stored profile':handoff.profileReceipt.profileVersion} at {new Date(handoff.profileReceipt.loadedAt).toLocaleString()}. {stage==='preview'?'Scout has not been dispatched by this preview.':`This Scout dispatch uses the same verified profile version.`}</p>}
     <ol className="cw-handoff-path" aria-label="Agent handoff path"><li>Profile: saved evidence</li><li>Master: coordinates research</li><li>Scout: searches relevant vacancies</li></ol>
-    <p>{summary.professionalFactCount} approved professional facts provide the search context. {summary.questionnaireFactCount??0} come from approved questionnaire answers and {summary.resumeFactCount??0} from resume evidence.</p>
+    <p>{summary.professionalFactCount} source-backed professional records provide the search context. {summary.questionnaireFactCount??0} come from approved questionnaire answers and {summary.resumeFactCount??0} from resume evidence.</p>
     <dl>{terms('Titles present in resume or selected JD sources',summary.titles)}{terms('Responsibilities',summary.responsibilities)}{terms('Industry knowledge',summary.industries)}{terms('Specialist skills and tools',summary.specialistSkills)}{terms('Education and certifications',summary.qualifications)}
       <div><dt>Function</dt><dd>{summary.functionName||'Missing / Not Provided'}</dd></div>
       <div><dt>Location and preferences</dt><dd>{Object.entries(summary.preferences).filter(([,value])=>value!==''&&value!==false&&value!=null).map(([key,value])=>`${key.replace(/([A-Z])/g,' $1')}: ${String(value)}`).join(' · ')||'Open preferences'}</dd></div>

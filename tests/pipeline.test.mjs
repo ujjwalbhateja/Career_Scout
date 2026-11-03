@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {runProvider} from '../lib/workflow/agent-providers.mjs';
 import {generateAgentJSON,ProfileMemory} from '../lib/profile/providers.mjs';
+import {ProfileService} from '../lib/profile/service.mjs';
 import {applicationRequest,pipelineCall} from '../lib/workflow/pipeline-client.mjs';
 import {emptyProfile,addDocument,proposeFacts,decideFacts,buildProfiles,approveRole,finalize} from '../lib/profile/domain.mjs';
 
@@ -10,7 +11,7 @@ test('web request allows selected target jobs but rejects incomplete inputs',()=
   assert.equal(applicationRequest(input).selected_job.id,'j1');
   assert.throws(()=>applicationRequest({...input,job:{...input.job,application_url:'http://localhost/'}}),/HTTPS/);
   assert.throws(()=>applicationRequest({...input,job:{...input.job,description:'short'}}),/readable/);
-  assert.throws(()=>applicationRequest({profileSelection:{roleId:'r1',version:'old'}}),/Build and save/);
+  assert.throws(()=>applicationRequest({profileSelection:{roleId:'r1',version:'old'}}),/Load the current stored profile/);
 });
 test('service token stays in server headers and only loopback is allowed',async()=>{
   let request;
@@ -58,7 +59,7 @@ test('Profile converts only current approved evidence with matching owner approv
   await proposeFacts(state,[{category:'experience_claims',field:'reporting',scope:'Example Employer',statement:'Prepared monthly reports for clients.',evidence:[{documentId:'resume',segmentId:'resume.p1',quote:'Prepared monthly reports for clients.'}]}]);
   decideFacts(state,state.facts.map(f=>({id:f.id,version:f.version,decision:'approved'})),owner);
   await buildProfiles(state,{profiles:[{roleName:'Analyst',summary:'Supported',keywords:['reporting'],factIds:[state.facts[0].id]}]},'resume');
-  approveRole(state,state.roleProfiles[0].id,owner);finalize(state,owner);
+  approveRole(state,state.roleProfiles[0].id,owner);state.documents[0].analysis='complete';new ProfileService({},owner).finalProfileResult(state);
   const service={owner,memory:{load:async()=>({state})}};
   const result=await runProvider({name:'load_profile',owner,payload:{version:'profile-1'},prompt:''},{},{service});
   assert.equal(result.facts[0].confirmation,'user_confirmed');assert.equal(result.roles.length,0);assert.ok(result.search_profile.responsibilities.some(t=>t.term.includes('reports')));assert.ok(!JSON.stringify(result.search_profile).includes('Analyst'));

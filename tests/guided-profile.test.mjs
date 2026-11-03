@@ -49,7 +49,7 @@ test('prepare analyzes resume and optional JD in sequence, persists goals and ne
   const result=await svc.action({revision:1,action:'prepare',search:{goals:'Reporting roles',location:'Boston',arrangement:'hybrid'}});assert.equal(calls,2);assert.ok(result.state.documents.every(d=>d.analysis==='complete'));assert.equal(result.state.facts[0].approval,'pending');assert.equal(result.state.preferences.search.location,'Boston');assert.equal(result.state.requirements.length,1);assert.equal(result.state.approvals.length,0);assert.equal(result.state.runs.filter(r=>r.status==='complete').length,2);
 });
 test('saved search preferences reach Scout through Profile-owned memory with no contact or goal-text leakage',async()=>{
-  const s=await fixture();await buildProfiles(s,{profiles:[role(s)]},'resume');approveRole(s,s.roleProfiles[0].id,'owner');s.preferences.search={location:'Boston',arrangement:'hybrid',goals:'Private career plan',preferSponsorship:true};finalize(s,'owner');const svc=memoryService(s);
+  const s=await fixture();s.documents[0].analysis='complete';await buildProfiles(s,{profiles:[role(s)]},'resume');approveRole(s,s.roleProfiles[0].id,'owner');s.preferences.search={location:'Boston',arrangement:'hybrid',goals:'Private career plan',preferSponsorship:true};const svc=memoryService(s);svc.finalProfileResult(s);svc.memory.load=async()=>({revision:1,state:structuredClone(s)});
   await dispatchProfileScout(svc,{roleId:s.roleProfiles[0].id,version:s.snapshots[0].version},{},async plan=>{assert.equal(plan.criteria.location,'Boston');assert.equal(plan.criteria.arrangement,'hybrid');assert.equal(plan.criteria.preferSponsorship,true);assert.equal(plan.criteria.goals,undefined);assert.ok(!JSON.stringify(plan).includes('Private career plan'));return [];});
 });
 test('follow-up answer analysis is one operation and preserves the answer if the model fails',async t=>{
@@ -59,7 +59,7 @@ test('follow-up answer analysis is one operation and preserves the answer if the
   const saved=await svc.memory.load();assert.equal(saved.state.answers.length,1);assert.equal(saved.state.questions[0].status,'answered');assert.equal(saved.state.facts.length,1);assert.equal(saved.state.facts[0].approval,'approved');assert.equal(saved.state.runs.at(-1).status,'failed');
 });
 test('finalization saves search preferences and approved snapshot atomically with one revision',async()=>{
-  const s=await fixture();await buildProfiles(s,{profiles:[role(s)]},'resume');approveRole(s,s.roleProfiles[0].id,'owner');const svc=memoryService(s),save=svc.memory.save;let writes=0;svc.memory.save=async(...args)=>{writes++;return save(...args);};
+  const s=await fixture();s.documents[0].analysis='complete';await buildProfiles(s,{profiles:[role(s)]},'resume');approveRole(s,s.roleProfiles[0].id,'owner');const svc=memoryService(s),save=svc.memory.save;let writes=0;svc.memory.save=async(...args)=>{writes++;return save(...args);};
   const result=await svc.action({revision:1,action:'finalize',search:{location:'Boston',goals:'Reporting',arrangement:'hybrid'}});assert.equal(writes,1);assert.equal(result.state.preferences.search.location,'Boston');assert.equal(result.state.snapshots.length,1);assert.equal(result.state.facts[0].approval,'approved');
 });
 test('public-looking hostnames resolving to private IPs are rejected before fetching the JD',async t=>{

@@ -54,7 +54,7 @@ export async function POST(request:Request){
       allowBackground=!['answer','analyzeAnswer','reviewExperience','reviewBuilder','extractSection1'].includes(body.action);
       result=await dispatchProfileOperation(profile,{body});
     }else throw new ProfileError('Use JSON or a document upload.',415);
-    if(allowBackground&&result.state?.outbox.some((event:{kind:string;status:string})=>event.kind==='reindex'&&event.status==='pending'))scheduleProfileWork(()=>profile.drainBackground());
+    if(allowBackground&&result.result?.kind!=='final_profile_needs_review'&&result.state?.outbox.some((event:{kind:string;status:string})=>event.kind==='reindex'&&event.status==='pending'))scheduleProfileWork(()=>profile.drainBackground());
     return Response.json(result,{headers});
   }catch(error){return errorResponse(error);}
 }

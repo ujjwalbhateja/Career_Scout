@@ -1,6 +1,6 @@
 # Profile workflow: Gemini, Supabase and Pinecone
 
-Updated: 2026-10-30, America/New_York. Gemini replaces the prior OpenAI
+Updated: 2026-11-03, America/New_York. Gemini replaces the prior OpenAI
 analysis and embedding integrations at the user's request. Supabase records and
 Pinecone storage are retained. Local synthetic extraction/embedding checks passed;
 provider activation, representative quality and full browser flows are tracked
@@ -27,9 +27,59 @@ prompt through its bound adapter. Hosted JS bundles these policies at build time
 the current local changes have not been published to the hosted Site. Prompt
 edits do not change agent permissions, source validation or approval gates.
 
-## Seven explicit steps through profile completion
+2026-11-03 prompt alignment: Profile, Memory, Master and Scout now describe
+immediate verified Builder saves and retrieval of the current factual profile,
+without a separate Final Profile save or repeated resume approval. Builder's
+persistence section reflects the same flow; all its questionnaire and evidence
+rules are preserved. Initial Matcher and Tailor prompt edits were outside the
+user's intended five-agent scope and have been restored to their exact pre-edit
+contents. Fact, Matcher and Tailor prompts and implementation code are unchanged
+relative to the baseline. Do not extend this prompt update to other agents.
 
-The local profile journey is:
+## Current workflow: approve, save and retrieve one profile
+
+The One Final Profile section and separate save step are retired. Approve in a
+Builder questionnaire sends the exact statement to Profile, which persists it
+in the existing Supabase factual record and reads it back before reporting
+success. Reject adds no claim. Somewhat stays a draft until its exact revised
+wording is approved. Lost responses reuse the original submission ID safely.
+
+```mermaid
+flowchart TD
+    F[Fact Agent] <-->|Resume information| P[Profile Agent]
+    B[Profile Builder] <-->|Stored profile, JDs and proposals| P
+    U[Your approved additions] --> P
+    P <-->|Save immediately and retrieve current records| DB[Memory / Supabase]
+    M[Master Agent] -->|Request latest stored profile| P
+    P -->|Current source-backed profile| M
+    M -->|Same version when research starts| S[Scout Agent]
+```
+
+The read-only current-profile adapter reuses existing resume records and exact
+work passages from the unchanged factual projection. Resume-sourced material
+does not acquire a fabricated approval; individually confirmed additions retain
+their approval receipts. Pending resume flags do not block retrieval. Unavailable
+sources, rejected/withdrawn claims and conflicts cannot enter current research
+context. JD titles can remain source-labeled search targets, not experience.
+
+The current content hash is internal version bookkeeping, not another profile
+save or a user approval. It binds the current eligible records and preferences
+between Profile, Master and Scout. Master loads through Profile-owned memory;
+Scout receives only scoped professional terms. The production dispatch reloads
+and validates that version before external research. Historical snapshot APIs
+remain for older clients and packages, but the main page uses current records.
+The Python application contract retains resume-source versus user-confirmed
+fact types and accepts both current content versions and historical versions.
+
+The implementation is `lib/profile/current-profile.mjs`; factual eligibility is
+in `lib/profile/source-records.mjs`. The shared Profile service verifies Builder
+saves and supplies the current loader. Fact/Builder prompts, extraction and
+questionnaire decisions are unchanged. No model request is necessary to load
+already saved profile information.
+
+## Historical seven-step workflow (superseded)
+
+The earlier profile journey was:
 
 1. **Add your resume and JDs** - upload or paste the resume and optional employer JDs.
 2. **Review facts and experience** - Section 1 groups factual records by personal details, employment stint, education, certifications and listed skills. Section 2 displays every extracted work claim, organized by source-supported employer/position and experience area. Review all proposed facts by version. Re-read old resumes to account for previously unrepresented work passages.
@@ -314,6 +364,50 @@ preferences. Editing linked criteria can detach the saved profile context. Manua
 search remains available. The Jobs discovery path does not activate Matcher,
 Tailor, Critic or application storage; Applications uses the separate pipeline
 described in [pipeline-usage.md](pipeline-usage.md).
+
+### Historical Final Profile save gate (superseded by current-record loading)
+
+Profile owns the save boundary. Completed resume analysis and explicit decisions
+on active pending resume records are required before Final Profile saving.
+Initial Section 1 extraction alone does not establish that the complete resume
+was analyzed. The Final Profile readiness panel links to resume analysis and
+uses existing fact-decision checks for pending records; neither Fact nor Builder
+automatically approves these records.
+
+Save Final Profile refreshes only stale selected-JD comparisons, retaining the
+existing source, decision, conflict, required-response, quota and concurrency
+checks. A successful write is followed by a storage reload. Profile checks the
+acknowledged revision, exact snapshot, approved fact versions and approval refs,
+and the reconstructed consolidated/search projections. Its receipt contains the
+snapshot ID, profile version, approved-addition count and content hash. A failed
+reload is not reported as a successful save; unchanged retries reuse the version.
+
+```mermaid
+flowchart LR
+  F[Fact Agent] <--> P[Profile Agent]
+  B[Profile Builder] <--> P
+  U[Your explicit decisions] --> P
+  P <--> M[Memory / Supabase]
+  P --> V[Save, reload and verify Final Profile]
+  V --> A[Master loads that verified version]
+  A --> S[Scout receives the same verified version]
+```
+
+Master requests the current profile through Profile-owned memory, including
+approved questionnaire experience and skills. The current-profile and Python
+loaders reject incomplete legacy snapshots rather than reconstructing an
+unverified fallback for research. Historical records remain available for review.
+Master and Scout receipts carry the same version, snapshot ID and content hash;
+Profile verifies this binding before persisting the production dispatch. New
+approvals or withdrawn evidence invalidate an older handoff. Saving and previewing
+never trigger a job search.
+
+The page shows separate states for saved additions, verified Final Profile,
+Master loading and Scout dispatch. A preview does not establish an executed
+dispatch. Fact/Builder policies, source statements and existing approvals are
+preserved. Search-only list cleanup removes punctuation wrappers such as
+`(e.g., ...)` while preserving meaningful parentheses, exact source spans and
+approval references.
 
 ### Preview, dispatch and research receipts
 

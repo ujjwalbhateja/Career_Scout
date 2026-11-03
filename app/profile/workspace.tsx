@@ -9,9 +9,6 @@ import {type BuilderQuestion} from './builder-interview';
 import FactReview from './fact-review';
 import BuilderExpansion,{type RoleQuestionnaire} from './builder-expansion';
 import {buildRoleQuestionnaires,builderReviewReceiptMatches,builderQuestionnaireScope} from '@/lib/profile/builder-expansion.mjs';
-import {buildConsolidatedProfile} from '@/lib/profile/consolidated.mjs';
-import ConsolidatedReview from './consolidated-review';
-import FinalProfileSaveStatus from './final-profile-save-status';
 import HandoffReview,{type HandoffReceipt} from './handoff-review';
 import type {ConsolidatedProfileData} from '@/lib/profile/consolidated-types';
 import './builder.css';
@@ -20,8 +17,8 @@ import ProgressTracker from '../progress/tracker';
 import progressRecord from '@/data/scout-progress.json';
 import type {ProgressRecord} from '@/lib/progress-types';
 import {Compass,ArrowRight,ChevronRight,Link2,CheckCircle2,Target,MapPin,Sparkles,Lock,Settings2} from 'lucide-react';
-import {CATEGORIES,savedPacket,finalizationReadiness} from '@/lib/profile/domain.mjs';
-import {factKey,factDecision,latestRecord,decisionBasesMatch,decisionReceiptMatches,answerReceiptMatches,experienceReviewReceiptMatches,section1ReceiptMatches,indexingActive,profileWorkPending,finalProfileSaveReceiptMatches} from '@/lib/profile/client-state.mjs';
+import {CATEGORIES,finalizationReadiness} from '@/lib/profile/domain.mjs';
+import {factKey,factDecision,latestRecord,decisionBasesMatch,decisionReceiptMatches,answerReceiptMatches,experienceReviewReceiptMatches,section1ReceiptMatches,indexingActive,profileWorkPending} from '@/lib/profile/client-state.mjs';
 type Ref={documentId:string;segmentId:string;quote:string};
 type Fact={id:string;version:number;category:string;field:string;scope:string;statement:string;fingerprint:string;approval:string;approvalRef:string|null;confirmation:string;lifecycle:string;conflict:boolean;consistencyNotes?:string[];evidence:Ref[]};
 type Doc={id:string;kind:string;title:string;selected:boolean;analysis:string;deleted?:boolean;objectPath?:string;sourceURL?:string;segments:{id:string;text:string;locator:string}[];assessment?:{profileVersion:string;mappings:Mapping[]}};
@@ -32,7 +29,7 @@ type SearchPreferences={goals:string;location:string;arrangement:string;employme
 type State={documents:Doc[];facts:Fact[];roleProfiles:Role[];requirements:{id:string;documentId?:string;text:string;importance:string}[];builderReviews?:BuilderReviewData[];questions:Question[];answers:{id:string;questionId:string;text:string;status:string;documentId?:string;requiresConsistencyReview?:boolean}[];snapshots:{version:string;stale:boolean;createdAt:string;profileRefs?:{id:string;version:number}[];consolidated?:ConsolidatedProfileData;searchPreferences?:SearchPreferences;searchProfile?:{id:string;basis:string;context:{titles:{term:string}[]}}}[];scoutHandoffs?:HandoffReceipt[];outbox:{id:string;status:string;kind:string}[];runs:{id:string;action:string;status:string;startedAt:string;message?:string}[];preferences:{disclosure?:string[];search?:SearchPreferences};approvals?:{id:string;kind:string;recordId:string;recordVersion:number;decision:string;at:string}[];memoryIntent?:{runId:string;expiresAt:string};deletion?:unknown};
 type Providers={supabase:boolean;pinecone:boolean;model:boolean};
 type Retrieval={results:{text:string;id:string;record_type:string}[];mode:string;warning?:string};
-type RecordData={revision:number;state:State;providers?:Providers;error?:string;result?:unknown;deleted?:boolean};
+type RecordData={revision:number;state:State;providers?:Providers;error?:string;result?:unknown;deleted?:boolean;currentProfile?:{ready:boolean;message?:string;version:string;searchProfile:{basis:string;context:{titles:{term:string}[]}};searchPreferences?:SearchPreferences}};
 const empty:State={documents:[],facts:[],roleProfiles:[],requirements:[],questions:[],answers:[],snapshots:[],outbox:[],runs:[],preferences:{}};
 const label=(s:string)=>s.replaceAll('_',' ');
 const decisionLabels:Record<string,string>={approved:'Approved',rejected:'Rejected',pending:'Pending review',withdrawn:'Approval withdrawn'};
@@ -41,7 +38,6 @@ const tabs=['Documents','Facts','Builder','Search','Memory'];
 export default function ProfileWorkspace(){
   const [applicationJob,setApplicationJob]=useState<ApplicationJob|null>(null);
   const [profileLoaded,setProfileLoaded]=useState(false);
-  const [finalSaveIssues,setFinalSaveIssues]=useState<{code:string;message:string;documentId?:string}[]>([]);
   const [reviewDocumentIds,setReviewDocumentIds]=useState<string[]|null>(null);
   const [view,setView]=useState('profile'),[jdURL,setJDURL]=useState(''),[jdEntry,setJDEntry]=useState('link'),[jdText,setJDText]=useState('');
   const [search,setSearch]=useState<SearchPreferences>({goals:'',location:'',arrangement:'any',employment:'any',seniority:'any',preferSponsorship:false});
@@ -52,11 +48,10 @@ export default function ProfileWorkspace(){
   const [tab,setTab]=useState('Documents'),[busy,setBusy]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState(''),[title,setTitle]=useState(''),[text,setText]=useState(''),[selectedJD,setSelectedJD]=useState(true),[picked,setPicked]=useState<string[]>([]),[category,setCategory]=useState('all'),[editing,setEditing]=useState(''),[correction,setCorrection]=useState(''),[answers,setAnswers]=useState<Record<string,string>>({}),[query,setQuery]=useState(''),[results,setResults]=useState<{text:string;id:string;record_type:string}[]>([]),[deleteText,setDeleteText]=useState(''),[disclosure,setDisclosure]=useState('');
   const recordRef=useRef(record),actionLock=useRef(false),disclosureDirty=useRef(false),actionError=useRef('');
   const state=record.state||empty,docs=state.documents.filter(d=>!d.deleted),facts=state.facts.filter(f=>f.lifecycle==='active'),approved=facts.filter(f=>f.approval==='approved'&&!f.conflict),jds=docs.filter(d=>d.kind==='jd'&&d.selected);
-  const snapshot=useMemo(()=>{try{return savedPacket(state).snapshot as State['snapshots'][number];}catch{return null;}},[state]);
+  const snapshot=record.currentProfile?.ready?record.currentProfile:null;
   const readiness=finalizationReadiness(state);
   const questionnaires=useMemo(()=>buildRoleQuestionnaires(state) as RoleQuestionnaire[],[state]);
   const questionnaireScope=useMemo(()=>builderQuestionnaireScope(state),[state]);
-  const finalPreview=useMemo(()=>buildConsolidatedProfile(state) as unknown as ConsolidatedProfileData,[state]);
   const acceptRecord=useCallback((data:RecordData):RecordData=>{
     const next=latestRecord(recordRef.current,data) as RecordData;
     if(data.state&&Number.isInteger(data.revision))setProfileLoaded(true);
@@ -93,15 +88,14 @@ export default function ProfileWorkspace(){
         if(!decisionBasesMatch(fresh.state,body.decisions))throw new Error('Decision not saved. A selected fact or its previous decision changed. Review the reloaded facts and choose again.');
         if(indexingActive(fresh.state))throw new Error('Decision not saved yet. Memory indexing is finishing; your saved facts are unchanged. Wait for syncing to finish, then choose again.');
         current=fresh;
-      }else if(['prepare','buildProfiles','approveRole','finalize','saveFinalProfile','importJD','preferences','answer','analyzeAnswer','reviewExperience','reviewBuilder','extractSection1','paste'].includes(action)){
+      }else if(['prepare','buildProfiles','approveRole','finalize','importJD','preferences','answer','analyzeAnswer','reviewExperience','reviewBuilder','extractSection1','paste'].includes(action)){
         const fresh=await load({quiet:true});if(!fresh)throw new Error('Could not refresh your saved profile. Try again.');current=fresh;
       }
       const response=await fetch('/api/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,revision:current.revision,...body})}),data=await response.json() as RecordData;
       if(!response.ok){if(response.status===409)await load({quiet:true});throw new Error((action==='decideFacts'?'Decision not saved. ':'')+(data.error||'Operation failed.'));}
-      if(action==='saveFinalProfile'&&!finalProfileSaveReceiptMatches(data))throw new Error('Could not verify the saved Final Profile receipt. Reload before continuing to Master and Scout.');
       if(action==='answer'&&!answerReceiptMatches(data,body))throw new Error('Could not verify the saved answer receipt. Your draft is kept; try again.');
       if(action==='extractSection1'&&!section1ReceiptMatches(data,body))throw new Error('Could not verify the saved Section 1 extraction. Reload before reviewing the source fields.');
-      if(action==='reviewBuilder'&&!builderReviewReceiptMatches(data,body))throw new Error('Could not verify the saved Builder decision. Your draft is kept; retry with the same decision.');
+      if(action==='reviewBuilder'&&(!builderReviewReceiptMatches(data,body)||(data.result as {storageVerified?:boolean})?.storageVerified!==true))throw new Error('Could not verify the saved Builder decision. Your draft is kept; retry with the same decision.');
       if(action==='reviewExperience'&&!experienceReviewReceiptMatches(data,body))throw new Error('Could not verify the saved experience review. Your selections and text are kept; try again.');
       if(action==='decideFacts'&&!decisionReceiptMatches(data,body.decisions))throw new Error('The saved result did not confirm your requested decision. Reload and check the fact status before continuing.');
       if(action==='export'){
@@ -109,11 +103,11 @@ export default function ProfileWorkspace(){
       }else if(action==='retrieve'){const retrieved=data.result as Retrieval;setResults(retrieved.results);setNotice(retrieved.warning||('Retrieved using '+retrieved.mode));}
       else if(data.deleted){acceptRecord({revision:data.revision,state:data.state||empty});setDeleteText('');}
       else acceptRecord({...data,providers});
-      if(['analyze','prepare','buildProfiles','assessJD','decideFacts'].includes(action))await load({quiet:true});
+      if(['analyze','prepare','buildProfiles','assessJD','decideFacts','paste','importJD','selectJD','preferences','correctFact','reviewExperience'].includes(action))await load({quiet:true});
       if(action==='decideFacts'&&!decisionReceiptMatches(recordRef.current,body.decisions))throw new Error('Your decision was saved, but a newer profile change is now loaded. Review the current fact status.');
       if(action!=='retrieve'){const receipt=data.result as {kind?:string;message?:string}|undefined;setNotice(receipt?.kind==='final_profile_needs_review'?'':receipt?.message||message);}
       return data;
-    }catch(e){if(['analyze','prepare','buildProfiles','assessJD','answer','analyzeAnswer','saveFinalProfile'].includes(action))await load({quiet:true});actionError.current=e instanceof Error?e.message:'Operation failed.';setError(actionError.current);}
+    }catch(e){if(['analyze','prepare','buildProfiles','assessJD','answer','analyzeAnswer'].includes(action))await load({quiet:true});actionError.current=e instanceof Error?e.message:'Operation failed.';setError(actionError.current);}
     finally{actionLock.current=false;setBusy('');}
   }
   async function upload(file:File,documentKind='resume'){
@@ -121,7 +115,7 @@ export default function ProfileWorkspace(){
     try{
       const form=new FormData();form.set('file',file);form.set('kind',documentKind);form.set('title','');form.set('selected',String(documentKind==='jd'));form.set('revision',String(recordRef.current.revision));
       const response=await fetch('/api/profile',{method:'POST',body:form}),data=await response.json() as RecordData;if(!response.ok)throw new Error(data.error);
-      acceptRecord({...data,providers});setNotice('Document saved privately. Analyze it to propose source-linked records.');return true;
+      acceptRecord({...data,providers});await load({quiet:true});setNotice('Document saved privately. Analyze it to propose source-linked records.');return true;
     }catch(e){setError(e instanceof Error?e.message:'Upload failed.');return false;}finally{actionLock.current=false;setBusy('');}
   }
   const syncing=indexingActive(state),disabled=!!busy||!profileLoaded||!providers.supabase||syncing;
@@ -130,7 +124,7 @@ export default function ProfileWorkspace(){
   const steps=[
     {id:'Documents',title:'Add your resume',detail:'Your resume source documents',done:resumes.some(d=>d.analysis==='complete')&&!readiness.blockers.some((b:{code:string})=>b.code==='source_review_incomplete')},
     {id:'Facts',title:'Review facts and experience',detail:'Factual records and professional experience',done:approved.length>0&&!facts.some(f=>f.approval==='pending'||f.conflict)&&!readiness.blockers.some((b:{code:string})=>b.code==='source_review_incomplete')},
-    {id:'Builder',title:'Expand experience and skills',detail:'Role questionnaires and one Final Profile',done:!!snapshot},
+    {id:'Builder',title:'Expand experience and skills',detail:'Questionnaires and automatically saved additions',done:!!snapshot},
     {id:'Search',title:'Send to Master and Scout',detail:'Review context and start job research',done:!!snapshot&&!!state.scoutHandoffs?.some(h=>h.profileVersion===snapshot.version&&h.stage==='completed')}
   ];
   const stepIndex=Math.max(0,steps.findIndex(s=>s.id===tab)),nextStep=steps.find(s=>!s.done)?.id||'Search';
@@ -143,33 +137,22 @@ export default function ProfileWorkspace(){
     if(!refreshAll&&!documentIds.length){setNotice('No new job descriptions to analyze. Earlier questionnaires are saved below.');return;}
     await act('buildProfiles',{mode:'expansion',search,...(documentIds?{documentIds}:{})},refreshAll?'Selected role comparisons refreshed.':'Questionnaires prepared for the newly added roles. Earlier answers are preserved.');
   }
-  async function saveFinalProfile(){
-    setFinalSaveIssues([]);
-    const data=await act('saveFinalProfile',{search});
-    const result=data?.result as {kind?:string;blockers?:{code:string;message:string;documentId?:string}[]}|undefined;
-    if(result?.kind==='final_profile_needs_review')setFinalSaveIssues(result.blockers||[]);
-  }
-  function reviewFinalIssues(){
-    const builder=finalSaveIssues.some(b=>b.code.startsWith('comparison')||b.code.startsWith('builder')||b.code.startsWith('selected_jd')||b.code==='question_response_required');
-    if(builder){const ids=finalSaveIssues.map(b=>b.documentId).filter((id):id is string=>!!id);setReviewDocumentIds(ids.length?ids:jds.map(d=>d.id));setTab('Builder');requestAnimationFrame(()=>document.getElementById('builder-questionnaires')?.scrollIntoView({block:'start'}));}
-    else setTab('Facts');
-  }
   async function uploadJDs(files:File[]){if(files.length+jds.length>15){setError('Select at most 15 JDs in total.');return;}for(const file of files){const saved=await upload(file,'jd');if(!saved)return;}setNotice(files.length+' job descriptions saved privately with your source documents.');}
   useEffect(()=>{
     setHandoffPlan(null);setHandoffError('');
-    if(tab!=='Search'||!snapshot?.consolidated||snapshot?.searchProfile?.basis!=='validated_source_data'){setHandoffLoading(false);return;}
+    if(tab!=='Search'||!snapshot||snapshot.searchProfile?.basis!=='validated_source_data'){setHandoffLoading(false);return;}
     const controller=new AbortController();setHandoffLoading(true);
-    fetch('/api/scout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'profilePlan',profileSelection:{roleId:'master-profile',version:snapshot.version}}),signal:controller.signal})
+    fetch('/api/scout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'profilePlan',profileSelection:{roleId:'master-profile',version:'current'}}),signal:controller.signal})
       .then(async response=>{const data=await response.json() as {handoff:HandoffReceipt;error?:string};if(!response.ok)throw new Error(data.error||'Could not preview the saved profile handoff.');if(!controller.signal.aborted)setHandoffPlan(data);})
       .catch(error=>{if(!controller.signal.aborted)setHandoffError(error.message||'Could not preview the saved profile handoff.');})
       .finally(()=>{if(!controller.signal.aborted)setHandoffLoading(false);});
     return()=>controller.abort();
-  },[tab,snapshot?.version,!!snapshot?.consolidated,snapshot?.searchProfile?.basis]);
+  },[tab,snapshot?.version,snapshot?.searchProfile?.basis]);
   async function openJobs(autoSearch=true){
-    if(!snapshot?.consolidated||snapshot.searchProfile?.basis!=='validated_source_data'){setError('A saved validated profile is required for profile-based job research.');return;}
+    if(!snapshot||snapshot.searchProfile?.basis!=='validated_source_data'){setError('Load your stored profile before starting research.');return;}
     const titles=snapshot.searchProfile.context.titles.map(title=>title.term).join(', ');
     try{const old=JSON.parse(localStorage.getItem('career-scout.criteria.v2')||'{}');localStorage.setItem('career-scout.criteria.v2',JSON.stringify({...old,...snapshot.searchPreferences,roles:titles,mode:'exact',relatedKeywords:''}));}catch{}
-    window.history.replaceState(null,'','/?view=jobs&profileRole=master-profile&profileVersion='+encodeURIComponent(snapshot.version)+(autoSearch?'&startResearch=1':''));setView('jobs');
+    window.history.replaceState(null,'','/?view=jobs&profileRole=master-profile&profileVersion='+encodeURIComponent(handoffPlan?.handoff.profileVersion||snapshot.version)+(autoSearch?'&startResearch=1':''));setView('jobs');
   }
 
   function sourceList(documentKind:string){return docs.filter(d=>d.kind===documentKind).map(d=><div className="cw-source" key={d.id}><FileText size={19}/><div><strong>{d.title}</strong><span>{d.analysis==='complete'?'Analyzed and saved':'Saved · ready to analyze'}{d.sourceURL&&' · from a link'}</span></div><details><summary aria-label={'Manage '+d.title}>•••</summary><div>{d.objectPath&&<a href={'/api/profile?download='+encodeURIComponent(d.id)}>Download original</a>}{d.sourceURL&&<a href={d.sourceURL} target="_blank" rel="noreferrer">View source</a>}{d.kind==='jd'&&<label><input type="checkbox" checked={d.selected} disabled={disabled} onChange={e=>void act('selectJD',{id:d.id,selected:e.target.checked})}/>Use in my profile</label>}<button disabled={disabled} onClick={()=>void act('removeDocument',{id:d.id},'Source withdrawn. Its dependent facts need review.')}>Withdraw source</button></div></details></div>);}
@@ -180,7 +163,7 @@ export default function ProfileWorkspace(){
       <section className="cw-intro"><div><p className="cw-eyebrow">MY PROFILE · YOUR STARTING POINT</p><h1>Your next chapter<br/><em>starts with you.</em></h1><p>Add your resume. Turn your experience into a clear profile<br className="cw-desktop"/> and a job search with direction.</p></div><div className="cw-overview"><span className="cw-saved"><Lock size={13}/>Your profile, under your control</span><div><strong>{steps.filter(s=>s.done).length}<small>/ {steps.length}</small></strong><span>steps complete</span></div><div className="cw-progress-track"><i style={{width:(steps.filter(s=>s.done).length/steps.length*100)+'%'}}/></div><button onClick={()=>setTab(nextStep)}>Continue where I left off <ArrowRight size={15}/></button></div></section>
       <div className="cw-layout"><aside className="cw-sidebar"><p className="cw-eyebrow">YOUR PROFILE JOURNEY</p><nav aria-label="Profile steps">{steps.map((step,i)=><button key={step.id} className={tab===step.id?'active':''} aria-current={tab===step.id?'step':undefined} onClick={()=>setTab(step.id)}><span className={'cw-step-number '+(step.done?'done':'')}>{step.done?<Check size={16}/>:String(i+1).padStart(2,'0')}</span><span><strong>{step.title}</strong><small>{step.detail}</small></span><ChevronRight size={15}/></button>)}</nav><div className="cw-sidebar-note"><ShieldCheck size={21}/><strong>Your experience. Your say.</strong><p>Review the information extracted from your resume. Scout uses an existing saved validated profile for job research.</p><button onClick={()=>setTab(tab==='Memory'?'Documents':'Memory')}><Settings2 size={14}/> My data & privacy</button></div></aside>
       <main className="cw-panel" id="profile-step"><div className="cw-panel-top"><span>STEP {String(stepIndex+1).padStart(2,'0')} OF {String(steps.length).padStart(2,'0')}</span><span className="cw-dot-label">{busy?'Saving your progress':profileLoaded?(docs.length?'Progress saved privately':'Ready to begin'):error?'Connection needs attention':'Connecting your profile'}</span></div>
-        {error&&<div className="cw-feedback error" role="alert"><strong>We couldn’t finish that step.</strong><p>{error}</p><button onClick={()=>void load()}>Refresh saved progress</button></div>}{notice&&<div className="cw-feedback" role="status"><CheckCircle2 size={17}/>{notice}</div>}{(busy||syncing)&&<div className="cw-working" role="status"><LoaderCircle className="pf-spin" size={17}/>{busy==='prepare'?'Reading your source documents. This can take a minute.':busy==='saveFinalProfile'?'Checking your latest profile, updating comparisons where needed, and validating the save. This may take a few minutes.':busy==='buildProfiles'?'Profile Builder is analyzing selected JDs, comparing your approved facts and preparing gap questions.':syncing?'Finishing a saved update. You can review your profile while it syncs.':'Saving your changes…'}</div>}
+        {error&&<div className="cw-feedback error" role="alert"><strong>We couldn’t finish that step.</strong><p>{error}</p><button onClick={()=>void load()}>Refresh saved progress</button></div>}{notice&&<div className="cw-feedback" role="status"><CheckCircle2 size={17}/>{notice}</div>}{(busy||syncing)&&<div className="cw-working" role="status"><LoaderCircle className="pf-spin" size={17}/>{busy==='prepare'?'Reading your source documents. This can take a minute.':busy==='buildProfiles'?'Profile Builder is analyzing selected JDs, comparing your approved facts and preparing gap questions.':syncing?'Finishing a saved update. You can review your profile while it syncs.':'Saving your changes…'}</div>}
         {tab==='Documents'&&<section><div className="cw-section-heading"><h2>Let’s start with your experience.</h2><p>Your resume builds the foundation. Add job descriptions later in Expand experience and skills.</p></div><div><article className="cw-upload-card"><div className="cw-card-title"><span className="cw-icon"><Upload size={21}/></span><div><h3>Your resume</h3><span>Required to build your profile</span></div></div><label className="cw-dropzone" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();const file=e.dataTransfer.files?.[0];if(file&&!disabled)void upload(file,'resume');}}><Upload size={26}/><strong>{resumes.length?'Add an updated resume':'Drop your resume here'}</strong><span>or <u>browse files</u></span><small>PDF, Word (.docx) or TXT · up to 2 MB</small><input aria-label="Upload your resume" type="file" accept=".pdf,.docx,.txt" disabled={disabled} onChange={e=>{const file=e.target.files?.[0];if(file)void upload(file,'resume');e.target.value='';}}/></label>{sourceList('resume')}</article></div><div className="cw-gentle-note"><Sparkles size={19}/><p><strong>Start with your resume.</strong><br/>We’ll identify the experience and skills explicitly recorded in it.</p></div><details className="cw-text-intake"><summary>Prefer to paste the text instead?</summary><textarea aria-label="Resume text" rows={6} value={text} onChange={e=>setText(e.target.value)} placeholder="Paste the complete source text"/><button className="cw-secondary" disabled={disabled||text.trim().length<80} onClick={()=>void act('paste',{kind:'resume',text,selected:false},'Source text saved.').then(data=>{if(data)setText('');})}>Save source text</button></details><label className="cw-field">Anything you’d like to focus on? <small>Optional · a role, industry or career direction</small><input value={search.goals} maxLength={1500} onChange={e=>changeSearch('goals',e.target.value)} placeholder="For example: client reporting roles in financial services"/></label><div className="cw-step-footer"><span><Lock size={13}/>You’ll review extracted facts next.</span><button className="cw-primary" disabled={disabled||!resumes.length||!providers.model} onClick={()=>void prepare()}>Analyze my documents <ArrowRight size={16}/></button></div></section>}
         {tab==='Facts'&&<section>
           <div className="cw-section-heading"><h2>Your factual profile.</h2><p>Personal records, skills and professional work experience from your resume.</p></div>
@@ -194,22 +177,12 @@ export default function ProfileWorkspace(){
           <div className="cw-completion-actions"><button className="cw-primary" disabled={disabled||!providers.model||!questionnaireScope.newDocumentIds.length||!approved.some(f=>!['personal','preferences'].includes(f.category))} onClick={()=>void compareRoles()}>Analyze new roles ({questionnaireScope.newDocumentIds.length})</button></div>
           {!approved.some(f=>!['personal','preferences'].includes(f.category))&&<p>Approved professional facts are needed before Profile Builder can compare job requirements.</p>}
           {!jds.length&&<p>Add one or more job descriptions to create separate role questionnaires.</p>}
-          <BuilderExpansion groups={questionnaires} activeDocumentIds={questionnaireScope.newDocumentIds.length?questionnaireScope.activeDocumentIds:reviewDocumentIds||questionnaireScope.activeDocumentIds} disabled={disabled} onSubmit={async body=>{const data=await act('reviewBuilder',body,'Builder decision saved.');return {ok:!!data,message:data?(body.rows[0]?.decision==='somewhat'?'Revision saved as a draft. Review it and approve the wording separately.':body.rows[0]?.decision==='reject'?'Rejection saved. No claim was added.':'Approved statement saved to your Factual Profile. Save Final Profile when ready; any needed comparison updates happen automatically.'):actionError.current||'Could not save. Your draft is kept.'};}}/>
+          <BuilderExpansion groups={questionnaires} activeDocumentIds={questionnaireScope.newDocumentIds.length?questionnaireScope.activeDocumentIds:reviewDocumentIds||questionnaireScope.activeDocumentIds} disabled={disabled} onSubmit={async body=>{const data=await act('reviewBuilder',body,'Builder decision saved.');return {ok:!!data,message:data?(body.rows[0]?.decision==='somewhat'?'Revision saved as a draft. Review it and approve the wording separately.':body.rows[0]?.decision==='reject'?'Rejection saved. No claim was added.':'Profile updated and saved. Your approved statement is available to Master and Scout.'):actionError.current||'Could not save. Your draft is kept.'};}}/>
           <button className="cw-secondary" onClick={()=>setTab('Facts')}>View updated Factual Profile</button>
-          <section className="cw-readiness"><h3>One Final Profile</h3><p>Your approved experience and skills are already saved. Saving your Final Profile checks the latest information, updates comparisons where needed, and validates the result for Master and Scout.</p>
-            <FinalProfileSaveStatus loaded={profileLoaded} latest={state.snapshots.at(-1)} currentVersion={snapshot?.version}/>
-            <p className="cw-answer-saved">Your saved facts and decisions are preserved. Rejected claims and unapproved revisions are excluded.</p>
-            {!!finalSaveIssues.length&&<div role="alert"><strong>Final Profile needs review</strong><ul>{finalSaveIssues.map((b,i)=><li key={b.code+i}>{b.message}</li>)}</ul><button className="cw-secondary" onClick={reviewFinalIssues}>Review outstanding items</button>
-              {finalSaveIssues.some(b=>b.code==='comparison_unresolved')&&<button className="cw-secondary" disabled={disabled||!providers.model} onClick={()=>{const documentIds=[...new Set(finalSaveIssues.filter(b=>b.code==='comparison_unresolved').map(b=>b.documentId).filter(Boolean))];void act('buildProfiles',{mode:'expansion',documentIds},'Comparisons rechecked. Review the result before saving again.').then(data=>{if(data)setFinalSaveIssues([]);});}}>Recheck unresolved comparisons</button>}
-            </div>}
-            {!finalSaveIssues.length&&!readiness.ready&&<ul>{readiness.blockers.filter((b:{code:string})=>!['builder_comparison_required','selected_jd_analysis_pending'].includes(b.code)).map((b:{code:string;message:string},i:number)=><li key={b.code+i}>{b.message}</li>)}</ul>}
-            <details><summary>Preview Final Profile</summary><ConsolidatedReview data={snapshot?.consolidated||finalPreview} saved={!!snapshot?.consolidated}/></details>
-            <button className="cw-primary" disabled={disabled||!approved.length} onClick={()=>void saveFinalProfile()}>{busy==='saveFinalProfile'?'Checking and saving?':'Save Final Profile'}</button>
-            {snapshot?.consolidated&&<p role="status">Final Profile saved as {snapshot.version}. <button className="cw-secondary" disabled={disabled||!!finalSaveIssues.length} onClick={()=>setTab('Search')}>Continue to Master & Scout</button></p>}
-          </section>
+          <div className="cw-step-footer"><span>Approved additions are saved directly to your profile.</span><button className="cw-primary" disabled={disabled||!snapshot} onClick={()=>setTab('Search')}>Continue to Master &amp; Scout <ArrowRight size={17}/></button></div>
         </section>}
-        {tab==='Search'&&<section><div className="cw-section-heading"><h2>Research jobs from your saved profile.</h2><p>Master loads the saved consolidated profile through Profile and gives Scout the relevant approved responsibilities, skills, industry knowledge and search preferences.</p></div>
-          {!snapshot?.consolidated||snapshot.searchProfile?.basis!=='validated_source_data'?<div className="cw-empty"><p>Save the Final Profile from Expand experience and skills before starting profile-based research.</p><button className="cw-secondary" onClick={()=>setTab('Builder')}>Open Profile Builder</button></div>:<><p className="cw-profile-explanation">The search context below comes from the saved profile and supplied sources. Scout returns actual job openings with source/application links in the final results.</p>
+        {tab==='Search'&&<section><div className="cw-section-heading"><h2>Research jobs from your saved profile.</h2><p>Master asks Profile Agent for your latest stored profile, including résumé information and approved Builder additions, then passes its search context to Scout.</p></div>
+          {!snapshot||snapshot.searchProfile?.basis!=='validated_source_data'?<div className="cw-empty"><p>{record.currentProfile?.message||'Add readable résumé information or approve experience and skills to prepare your search context.'}</p><button className="cw-secondary" onClick={()=>setTab('Builder')}>Open Profile Builder</button></div>:<><p className="cw-profile-explanation">The search context below comes from the saved profile and supplied sources. Scout returns actual job openings with source/application links in the final results.</p>
           {handoffLoading&&<p role="status">Master is loading the saved profile for your handoff preview...</p>}{handoffError&&<p className="cw-inline-error" role="alert">{handoffError}</p>}{handoffPlan?.handoff&&<HandoffReview handoff={handoffPlan.handoff}/>}
           <div className="cw-step-footer"><button className="cw-text-button" onClick={()=>setTab('Facts')}>Review factual profile</button><button className="cw-secondary" disabled={disabled||handoffLoading||!handoffPlan} onClick={()=>void openJobs(false)}>Open search filters</button><button className="cw-primary" disabled={disabled||handoffLoading||!handoffPlan} onClick={()=>void openJobs(true)}>Send to Master & start job research <ArrowRight size={17}/></button></div></>}
         </section>}

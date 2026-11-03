@@ -12,6 +12,7 @@ async function setup(){
   addDocument(state,{id:'resume-test',kind:'resume',title:'Synthetic resume',hash:'resume-hash',segments:[{id:'resume-p1',text:'I prepare monthly client reports.',locator:'paragraph 1'}]});
   await proposeFacts(state,[{category:'experience_claims',field:'duties',scope:'Employer unspecified',statement:'I prepare monthly client reports.',evidence:[{documentId:'resume-test',segmentId:'resume-p1',quote:'I prepare monthly client reports.'}]}]);
   decideFacts(state,state.facts.map(f=>({id:f.id,version:f.version,decision:'approved'})),'synthetic-owner');
+  state.documents[0].analysis='complete'; // Fixture extraction above is complete.
   const statements=['Manage client renewal forecasts','Build acquisition models','Prepare consolidated operating budgets'];
   addDocument(state,{id:'jd-test',kind:'jd',selected:true,title:'Financial Services Analyst',hash:'jd-hash',segments:statements.map((text,i)=>({id:'jd-p'+i,text,locator:'requirement '+i}))});
   await addJDAnalysis(state,'jd-test',{roleName:'Financial Services Analyst',sector:'',requirements:statements.map((text,i)=>({category:'task',text,importance:'required',evidence:[{documentId:'jd-test',segmentId:'jd-p'+i,quote:text}]}))});

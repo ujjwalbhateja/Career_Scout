@@ -11,7 +11,7 @@ async function fixture(){
   await proposeFacts(state,statements.map(([category,field,statement],i)=>({category,field,scope:'Synthetic employer',statement,evidence:[{documentId:'resume',segmentId:`source.${i}`,quote:statement}]})));
   decideFacts(state,state.facts.map(f=>({id:f.id,version:1,decision:'approved'})),'synthetic-owner');
   state.preferences.search={location:'Boston',arrangement:'hybrid'};
-  finalize(state,'synthetic-owner');
+  state.documents[0].analysis='complete';new ProfileService({},'synthetic-owner').finalProfileResult(state);
   const service=new ProfileService({},'synthetic-owner');let reads=0,saves=0;
   service.memory.load=async()=>{reads++;return {revision:1,state:structuredClone(state)};};
   service.memory.save=async()=>{saves++;throw new Error('Preview must remain read-only');};

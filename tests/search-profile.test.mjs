@@ -25,6 +25,16 @@ function fixture() {
   return {state, fact, jd, snapshot};
 }
 
+test('example-list punctuation is removed only from search terms while compound names and evidence stay exact',()=>{
+  const {state,fact}=fixture();
+  const original=fact('skills','tools_technologies','(e.g., Allvue, Oxane, Lakehouse environments, Power BI)');
+  fact('skills','tools_technologies','C++, C#, .NET; financial reporting (IFRS, US GAAP); SQL (T-SQL)');
+  const before=structuredClone(state),profile=buildValidatedSearchProfile(state);
+  assert.deepEqual(profile.skills.map(t=>t.term),['Allvue','Oxane','Lakehouse environments','Power BI','C++','C#','.NET','financial reporting (IFRS, US GAAP)','SQL (T-SQL)']);
+  for(const term of profile.skills.slice(0,4)){assert.deepEqual(term.factRefs,[{id:original.id,version:1,approvalRef:original.approvalRef}]);assert.equal(term.sourceRefs[0].quote,original.statement);}
+  assert.deepEqual(state,before);
+});
+
 test('actual employment titles retain exact source spelling and approval evidence', () => {
   const {state, fact} = fixture();
   const title = fact('employment', 'job_title', 'portfolio analyst', {source: 'Portfolio Analyst'});

@@ -47,7 +47,9 @@ export async function POST(request:Request){
     if(body.action==='profilePlan'||(body.action==='search'&&body.profileSelection)){
       const user=await getChatGPTUser();if(!user)throw new ProfileError('Sign in to use your private approved profile.',401);
       const profile=new ProfileService(getProfileEnvironment(),user.userId);
-      const preview=await previewProfileScout(profile,body.profileSelection,body);
+      // Preview always loads today's stored profile, including when an old
+      // bookmarked URL names a retired Final Profile. Execution pins that result.
+      const preview=await previewProfileScout(profile,body.action==='profilePlan'?{version:'current'}:body.profileSelection,body);
       if(body.action==='profilePlan'){
         const {previousSeen:_history,...publicPlan}=preview.plan;
         return reply({...publicPlan,handoff:preview.handoff,audit:preview.audit});

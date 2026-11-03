@@ -7,7 +7,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
-Version = Annotated[str, StringConstraints(pattern=r"^profile-\d+$")]
+Version = Annotated[str, StringConstraints(pattern=r"^(?:profile-\d+|current-[a-f0-9]{64})$")]
 AgentId = Literal[
     "master",
     "profile",
@@ -56,6 +56,14 @@ class ApprovedFact(ProposedFact):
     version: int = Field(ge=1)
     approval_ref: Text
     confirmation: Literal["user_confirmed", "independently_verified"] = "user_confirmed"
+
+
+class ResumeSourceFact(ProposedFact):
+    """Source-validated resume content, without a manufactured user approval."""
+
+    version: int = Field(ge=1)
+    confirmation: Literal["source_stated"]
+    source_kind: Literal["resume"]
 
 
 class Role(Contract):
@@ -116,6 +124,7 @@ class ScoutContext(Contract):
     skills: tuple[SearchTerm, ...] = ()
     qualifications: tuple[SearchTerm, ...] = ()
     approvedFactIds: tuple[Text, ...] = ()
+    resumeFactIds: tuple[Text, ...] = ()
     requiresSponsorship: bool = False
     previousSeen: tuple[SeenVacancy, ...] = ()
 
@@ -137,15 +146,21 @@ class ApprovedProfile(Contract):
     """Memory adapter must validate current owner/version/approvals in authoritative storage."""
 
     version: Version
-    approval_ref: Text
+    approval_ref: Text | None = None
+    source_ref: Text | None = None
     current: Literal[True]
-    facts: tuple[ApprovedFact, ...] = Field(min_length=1)
+    facts: tuple[ApprovedFact | ResumeSourceFact, ...] = Field(min_length=1)
     roles: tuple[ApprovedRole, ...] = ()
     search_profile: ScoutContext | None = None
     preferences: Preferences = Field(default_factory=Preferences)
 
     @model_validator(mode="after")
     def references(self):
+        if self.version.startswith("current-"):
+            if self.source_ref != self.version.removeprefix("current-"):
+                raise ValueError("Current profile must bind its validated source version")
+        elif not self.approval_ref or any(isinstance(f, ResumeSourceFact) for f in self.facts):
+            raise ValueError("Legacy snapshots require their original approvals")
         ids = {fact.id for fact in self.facts}
         if len(ids) != len(self.facts) or len({role.id for role in self.roles}) != len(self.roles):
             raise ValueError("Duplicate profile identifiers")
@@ -155,7 +170,10 @@ class ApprovedProfile(Contract):
             raise ValueError("Search context must reference approved facts in this snapshot")
         if self.search_profile:
             context = self.search_profile
-            allowed = set(context.approvedFactIds)
+            source_ids = {f.id for f in self.facts if isinstance(f, ResumeSourceFact)}
+            if not set(context.resumeFactIds) <= source_ids or set(context.approvedFactIds) & source_ids:
+                raise ValueError("Resume sources must remain distinct from user-approved facts")
+            allowed = set(context.approvedFactIds) | set(context.resumeFactIds)
             facts = {fact.id: fact for fact in self.facts}
             terms = (
                 *context.responsibilities,

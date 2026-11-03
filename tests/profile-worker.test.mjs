@@ -26,6 +26,7 @@ function worker(requests,geminiResponse){
     {type:'ESModule',path:fileURLToPath(new URL('lib/profile/providers.mjs',base))},
     {type:'ESModule',path:fileURLToPath(new URL('lib/profile/domain.mjs',base))},
     {type:'ESModule',path:fileURLToPath(new URL('lib/profile/search-profile.mjs',base))},
+    {type:'ESModule',path:fileURLToPath(new URL('lib/profile/source-records.mjs',base))},
     {type:'ESModule',path:fileURLToPath(new URL('lib/profile/experience-review.mjs',base))},
     {type:'ESModule',path:fileURLToPath(new URL('lib/profile/jd-content.mjs',base))}
   ],outboundService:async request=>{

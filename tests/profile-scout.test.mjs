@@ -12,7 +12,7 @@ async function fixture(){
 }
 const proposal=s=>({profiles:[{roleName:'Client Reporting Analyst',summary:'Reporting support hypothesis',keywords:['reporting'],factIds:[s.facts[0].id]}]});
 function service(s){const service=new ProfileService({},'synthetic-owner');service.memory.load=async()=>({revision:1,state:structuredClone(s)});return service;}
-async function active(){const s=await fixture();finalize(s,'synthetic-owner');return s;}
+async function active(){const s=await fixture();s.documents[0].analysis='complete';service(s).finalProfileResult(s);return s;}
 const selection=s=>({roleId:'master-profile',version:s.snapshots.at(-1).version});
 
 test('approved professional facts save a searchable master profile without role proposals or approvals',async()=>{

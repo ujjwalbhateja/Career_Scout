@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {emptyProfile,addDocument,proposeFacts,decideFacts,addJDAnalysis,savedPacket,canonicalJSON} from '../lib/profile/domain.mjs';
+import {emptyProfile,addDocument,proposeFacts,decideFacts,addJDAnalysis,buildProfiles,savedPacket,canonicalJSON} from '../lib/profile/domain.mjs';
 import {ProfileService} from '../lib/profile/service.mjs';
 import {finalProfileSavePlan} from '../lib/profile/final-profile-save.mjs';
 import {finalProfileSaveReceiptMatches} from '../lib/profile/client-state.mjs';
+import {buildRoleQuestionnaires,applyBuilderReview} from '../lib/profile/builder-expansion.mjs';
+import {previewProfileScout,createScoutHandoffReceipt,persistScoutHandoff} from '../lib/workflow/scout-handoff.mjs';
 
 async function setup(t){
   const s=emptyProfile();addDocument(s,{id:'cv',kind:'resume',title:'Synthetic resume',hash:'cv',segments:[{id:'cv.1',text:'Professional Experience\nPrepared client reports using Excel.'}]});s.documents[0].analysis='complete';
@@ -105,4 +107,109 @@ test('unapproved drafts and rejected claims remain excluded, and missing model a
   const before=canonicalJSON(f.record.state.builderExpansion);f.service.env={};await assert.rejects(f.act(),/Connect the analysis model/);assert.equal(f.calls.length,0);assert.equal(f.writes.length,0);
   f.service.env={GEMINI_API_KEY:'fixture-only'};const r=await f.act();assert.ok(finalProfileSaveReceiptMatches(r));assert.equal(canonicalJSON(r.state.builderExpansion),before);
   assert.ok(!JSON.stringify(r.state.snapshots.at(-1).consolidated).includes('invented trading desk'));assert.ok(!JSON.stringify(r.state.snapshots.at(-1).consolidated).includes('Invented proprietary tool'));
+});
+
+test('incomplete resume analysis and pending resume facts stop before model calls without altering approvals',async t=>{
+  for(const kind of ['analysis','pending_facts'])await t.test(kind,async t=>{
+    const f=await setup(t);await f.addJD('a');
+    if(kind==='analysis')f.record.state.documents[0].analysis='pending';
+    else await proposeFacts(f.record.state,[{category:'skills',field:'tools_technologies',scope:'Skills',statement:'Excel',evidence:[{documentId:'cv',segmentId:'cv.1',quote:'Excel'}]}]);
+    const before=canonicalJSON(f.record.state),r=await f.act();
+    assert.equal(r.result.kind,'final_profile_needs_review');
+    assert.ok(r.result.blockers.some(b=>b.code===(kind==='analysis'?'resume_analysis_pending':'resume_facts_pending')));
+    assert.equal(f.calls.length,0);assert.equal(f.writes.length,0);assert.equal(canonicalJSON(f.record.state),before);
+  });
+});
+
+test('explicit Builder approvals survive storage, reach Master and Scout with one version, and exclude drafts and rejections',async t=>{
+  const f=await setup(t),s=f.record.state;
+  const statements=[['Prepared risk reports','task','approve'],['Python','skill','approve'],['Led acquisitions','task','reject'],['Managed global operations','task','somewhat']];
+  addDocument(s,{id:'discovery',kind:'jd',selected:true,title:'Risk Analyst',hash:'discovery',segments:[{id:'discovery.1',text:'Risk Analyst\n'+statements.map(r=>r[0]).join('; ')}]});
+  await addJDAnalysis(s,'discovery',{roleName:'Risk Analyst',requirements:statements.map(([text,category])=>({text,category,importance:'required',evidence:[{documentId:'discovery',segmentId:'discovery.1',quote:text}]}))});
+  await buildProfiles(s,{questions:[],mappings:s.requirements.map(r=>({requirementId:r.id,factIds:[],evidenceStatus:'not_established',explanation:'This specific scope is not established.'}))},'analysis');
+  for(const q of s.questions)q.required=false;
+  for(const [statement,,decision] of statements){
+    const row=buildRoleQuestionnaires(s).flatMap(g=>[...g.experience,...g.skills]).find(r=>r.proposedStatement===statement);
+    assert.ok(row);await applyBuilderReview(s,{submissionId:crypto.randomUUID(),revision:1,rows:[{rowId:row.id,fingerprint:row.fingerprint,decision,...(decision==='somewhat'?{text:'Assisted local operations'}:{})}]},'owner',{revision:1});
+  }
+  // A previous discovery role can be deselected; its approved experience must persist.
+  s.documents.find(d=>d.id==='discovery').selected=false;
+  await f.addJD('current');const facts=canonicalJSON(s.facts),decisions=canonicalJSON(s.builderExpansion);
+  const saved=await f.act(),v=saved.result.verification;
+  assert.ok(finalProfileSaveReceiptMatches(saved));assert.equal(v.questionnaireFactCount,2);
+  assert.equal(canonicalJSON(saved.state.facts),facts);assert.equal(canonicalJSON(saved.state.builderExpansion),decisions);
+  assert.equal(saved.state.scoutHandoffs?.length||0,0,'saving never dispatches Scout');
+  const loaded=await f.service.read();assert.equal(loaded.finalProfileStatus.includedAdditions,2);assert.equal(loaded.finalProfileStatus.verification.contentHash,v.contentHash);
+  const preview=await previewProfileScout(f.service,{version:v.profileVersion});
+  assert.equal(preview.plan.profileReceipt.contentHash,v.contentHash);assert.equal(preview.plan.selection.version,v.profileVersion);
+  assert.ok(preview.plan.scoutContext.skills.some(t=>t.term==='Python'));
+  assert.ok(preview.plan.scoutContext.responsibilities.some(t=>t.term==='Prepared risk reports'));
+  assert.doesNotMatch(JSON.stringify(preview.plan),/Led acquisitions|Managed global operations|Assisted local operations/);
+  const dispatched=await createScoutHandoffReceipt(preview.plan,preview.audit,{stage:'dispatched'});
+  const receipt=await persistScoutHandoff(f.service,dispatched);
+  assert.equal(receipt.persistence.saved,true);assert.equal(receipt.profileReceipt.contentHash,v.contentHash);
+  assert.equal(f.record.state.scoutHandoffs.at(-1).profileVersion,v.profileVersion);
+  const writes=f.writes.length,calls=f.calls.length,again=await f.act();
+  assert.equal(again.result.version,v.profileVersion);assert.equal(again.result.verification.contentHash,v.contentHash);
+  assert.equal(f.writes.length,writes);assert.equal(f.calls.length,calls);
+  const forged=structuredClone(dispatched);forged.profileReceipt.contentHash='a'.repeat(64);
+  await assert.rejects(persistScoutHandoff(f.service,forged),/profile changed/);
+});
+
+test('write acknowledgements without durable data, missing claims and changed projections never report success',async t=>{
+  for(const kind of ['no_write','missing_fact','changed_projection','old_revision'])await t.test(kind,async t=>{
+    const f=await setup(t),save=f.service.memory.save;
+    f.service.memory.save=async(revision,state)=>{
+      if(kind==='no_write')return {revision:revision+1,state};
+      const result=await save(revision,state);
+      if(kind==='missing_fact')f.record.state.snapshots.at(-1).factRefs=[];
+      if(kind==='changed_projection')f.record.state.snapshots.at(-1).searchProfile.skills=[];
+      if(kind==='old_revision')f.record.revision=revision;
+      if(kind==='changed_projection')f.record.state.snapshots.at(-1).searchProfile.label='Unverified content';
+      return result;
+    };
+    await assert.rejects(f.act(),/could not be verified/);
+  });
+});
+
+test('lost reload after a successful write can be retried without new version, approvals or model work',async t=>{
+  const f=await setup(t),load=f.service.memory.load,save=f.service.memory.save;let written=false,fail=true;
+  f.service.memory.save=async(...args)=>{const r=await save(...args);written=true;return r;};
+  f.service.memory.load=async()=>{if(written&&fail)throw Error('reload unavailable');return load();};
+  await assert.rejects(f.act(),/storage reload failed/);assert.equal(f.record.state.snapshots.length,1);
+  const before=canonicalJSON(f.record.state),writes=f.writes.length;fail=false;
+  const r=await f.act();assert.ok(finalProfileSaveReceiptMatches(r));assert.equal(f.writes.length,writes);
+  assert.equal(canonicalJSON(f.record.state),before);assert.equal(f.calls.length,0);
+});
+
+test('new approved facts or withdrawn sources between Master preview and Scout persistence invalidate the old handoff',async t=>{
+  for(const kind of ['new_fact','withdrawn_source'])await t.test(kind,async t=>{
+    const f=await setup(t),saved=await f.act(),preview=await previewProfileScout(f.service,{version:saved.result.version});
+    const receipt=await createScoutHandoffReceipt(preview.plan,preview.audit,{stage:'dispatched'});
+    if(kind==='withdrawn_source')f.record.state.documents[0].deleted=true;
+    else{await proposeFacts(f.record.state,[{category:'skills',field:'tools_technologies',scope:'Skills',statement:'Excel',evidence:[{documentId:'cv',segmentId:'cv.1',quote:'Excel'}]}]);const added=f.record.state.facts.at(-1);decideFacts(f.record.state,[{id:added.id,version:added.version,decision:'approved'}],'owner');}
+    await assert.rejects(persistScoutHandoff(f.service,receipt));
+    await assert.rejects(previewProfileScout(f.service,{version:saved.result.version}));
+    assert.equal(f.record.state.scoutHandoffs?.length||0,0);
+  });
+});
+
+test('legacy snapshots cannot bypass current-profile validation by omitting the new integrity marker',async t=>{
+  const f=await setup(t),saved=await f.act(),snapshot=f.record.state.snapshots.at(-1);
+  delete snapshot.saveIntegrityVersion;delete snapshot.consolidated;
+  await assert.rejects(previewProfileScout(f.service,{version:saved.result.version}),/consolidated Final Profile/);
+  const state=await f.service.read();assert.equal(state.finalProfileStatus.verification,null);
+  assert.equal(f.record.state.scoutHandoffs?.length||0,0);
+});
+
+test('a newer approved addition after the write prevents a stale successful save receipt',async t=>{
+  const f=await setup(t),save=f.service.memory.save;
+  f.service.memory.save=async(...args)=>{
+    const result=await save(...args),s=f.record.state;
+    await proposeFacts(s,[{category:'skills',field:'tools_technologies',scope:'Skills',statement:'Excel',evidence:[{documentId:'cv',segmentId:'cv.1',quote:'Excel'}]}]);
+    const added=s.facts.at(-1);decideFacts(s,[{id:added.id,version:added.version,decision:'approved'}],'owner');f.record.revision++;
+    return result;
+  };
+  await assert.rejects(f.act());assert.equal(f.record.state.facts.at(-1).statement,'Excel');
+  assert.equal(f.record.state.scoutHandoffs?.length||0,0);
 });
