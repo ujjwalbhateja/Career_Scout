@@ -1,8 +1,24 @@
 # Career Scout — current project context
 
-Updated 2026-11-03, America/New_York. Repository/app root: `C:\Users\ujjwa\job_search`.
+Updated 2026-11-05, America/New_York. Repository/app root: `C:\Users\ujjwa\job_search`.
 
-## Latest checkpoint: Scout and Master prompts aligned with Step 4 (2026-11-03)
+## Latest checkpoint: header navigation cleanup (2026-11-05)
+
+Removed the Jobs and Applications buttons from the top navigation at the user's request. My profile and How it works remain. The four-step workflow, Step 4 search and shortlist, existing application handlers, agent prompts and stored profile data are unchanged. No task status was changed; reviewed progress revision is 2026-11-05.1.
+
+Validation: twelve existing Step 4, progress and architecture checks and TypeScript passed. No provider calls, profile writes or hosted deployment were performed. This is a navigation-only change; GitHub publication was subsequently requested as recorded below.
+
+### Handoff and preservation instructions
+
+The active project is Career Scout at `C:\Users\ujjwa\job_search`, separate from Career Buddy at `C:\Users\ujjwa\Job Search\Career Buddy`. The open Career Buddy launcher tab does not change the active project.
+
+The user explicitly requested preservation of current progress. Keep the existing four-step workflow, saved profile and approval history, search results, application handlers and task statuses intact. The navigation change removes only the two header buttons; it does not remove agents or their capabilities.
+
+No agent prompt update is needed for this navigation-only change: agent responsibilities, routing, evidence requirements and guardrails are unchanged. Existing Scout and Master prompt alignment remains the baseline.
+
+The user subsequently requested publication of the navigation edit, reviewed progress metadata, generated architecture revision and this context update to the existing `main` branch at https://github.com/ujjwalbhateja/Career_Scout. Git history and remote state provide the publication receipt; this request does not include hosted deployment. The local app URL is http://127.0.0.1:5173/; use `Start-Scout.cmd` from this project root if it is stopped. Runtime health was not rechecked during this documentation update. The validation results above belong to the navigation change, not a new test run. This handoff updates documentation only.
+
+## Previous checkpoint: Scout and Master prompts aligned with Step 4 (2026-11-03)
 
 At the user's request, updated only `backend/src/career_scout/agents/scout/prompt.md` and `backend/src/career_scout/agents/master/prompt.md`. Existing instructions remain in place. Added the Step 4 requirements/results presentation contract, effective search preferences and defaults, partial salary-range matching, explicit sponsorship-refusal handling, newest-first display versus match groups, and the distinction between reviewed snapshots, restored browser results, partial leads and completed searches.
 

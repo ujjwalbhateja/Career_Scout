@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "revision": "2026-11-03.8",
-  "reviewedOn": "2026-11-03",
+  "revision": "2026-11-05.1",
+  "reviewedOn": "2026-11-05",
   "summary": "Profile Builder expands one Factual Profile with role-specific experience and skills questionnaires. Exact approved additions save through Profile to Supabase immediately and are verified by reloading storage. Master loads the current source-backed resume information and confirmed additions through Profile, then passes the same content version to Scout when research starts. One Final Profile and repeated resume approval are no longer required. Fact/Builder extraction, decisions and prompts remain unchanged. Local validation, real-user acceptance and hosted publication remain distinct.",
   "framework": {
     "name": "LangGraph",
@@ -3377,7 +3377,7 @@
       "stage": "discovery",
       "status": "in_review",
       "acceptance": "Step 4 displays the search requirements and source-linked job results, obtains current profile context through Profile and Master, preserves completed results with their original filters, and distinguishes dated research from new search results. Changing filters or profile version does not relabel old results.",
-      "detail": "Embedded Scout in Step 4. Jobs navigation and legacy Jobs links enter Step 4. Local reviewed job evidence is separate from new searches and excluded from production bundles. New searches preserve source links, salary ranges, unknown sponsorship and fit gaps. Completed searches are browser-local and partial responses cannot overwrite a completed saved search.",
+      "detail": "Embedded Scout in Step 4. The top Jobs and Applications tabs are removed; legacy Jobs links still enter Step 4. Local reviewed job evidence is separate from new searches and excluded from production bundles. New searches preserve source links, salary ranges, unknown sponsorship and fit gaps. Completed searches are browser-local and partial responses cannot overwrite a completed saved search.",
       "blockers": [
         "User visual acceptance and hosted deployment remain separate."
       ],
@@ -3724,6 +3724,11 @@
       "date": "2026-11-03",
       "title": "Step 4 Scout and Master prompt alignment",
       "detail": "70 targeted Node checks passed: actual Scout prompt consumption and source-term selection, current-profile retrieval, same-version handoffs, discovery policy, visa filtering, Step 4 snapshots/rendering and Markdown asset loading. Only Scout and Master prompts changed. No Gemini/live search, profile mutation, Git push or hosted deployment. Existing visual/user acceptance limits remain."
+    },
+    {
+      "date": "2026-11-05",
+      "title": "Header navigation cleanup",
+      "detail": "Removed only the Jobs and Applications header buttons at user request. Step 4, application handlers, agent prompts, stored data and all task statuses remain unchanged. Twelve existing Step 4/progress/architecture checks and TypeScript passed. No provider calls, profile writes or deployment."
     }
   ]
 }
