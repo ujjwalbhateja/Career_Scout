@@ -2,7 +2,15 @@
 
 Updated 2026-11-05, America/New_York. Repository/app root: `C:\Users\ujjwa\job_search`.
 
-## Latest checkpoint: header navigation cleanup (2026-11-05)
+## Latest checkpoint: Profile Agent documentation and standalone extraction (2026-11-05)
+
+The user requested full Profile Agent documentation, diagrams, tools/APIs and a separate public GitHub repository containing runnable code. Prepared `Career-Scout-Profile-Agent` from Career Scout commit `cedc267896578988c2c4607e5cd0877e45e28f39`; see [the documentation index](profile-agent.md). Its local root is `C:\Users\ujjwa\Job Search\Career Scout Profile Agent`, separate from both Career Scout and Career Buddy.
+
+The extraction uses the active JavaScript Profile service, unchanged Fact/Builder prompts and supporting modules. It includes a trusted library API, local CLI, synthetic demo, setup/API documentation and Mermaid architecture/sequence diagrams. It does not reproduce the browser app or ship the legacy Python coordinator as the current onboarding implementation. The current Builder approved-professional-fact prerequisite and known ingestion limitations are documented rather than changed.
+
+Standalone validation: 185 tests passed; CLI help/demo succeeded; 52 upstream source/prompt/migration/test hashes matched. No real profile writes, live model calls or database migrations occurred. Career Scout application code, prompts and reviewed progress statuses remain unchanged. These local documentation additions do not imply a new Career Scout capability or deployment. Published and verified the public repository at https://github.com/ujjwalbhateja/Career-Scout-Profile-Agent on `main`, commit `581866c3ccb51dc3d1653c167043f2555b597ff3`. The documentation is available on GitHub. Career Scout receives only this handoff and a documentation index; no application changes accompany them.
+
+## Previous checkpoint: header navigation cleanup (2026-11-05)
 
 Removed the Jobs and Applications buttons from the top navigation at the user's request. My profile and How it works remain. The four-step workflow, Step 4 search and shortlist, existing application handlers, agent prompts and stored profile data are unchanged. No task status was changed; reviewed progress revision is 2026-11-05.1.
 
