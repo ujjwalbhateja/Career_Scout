@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "revision": "2026-11-05.1",
-  "reviewedOn": "2026-11-05",
+  "revision": "2026-11-09.1",
+  "reviewedOn": "2026-11-09",
   "summary": "Profile Builder expands one Factual Profile with role-specific experience and skills questionnaires. Exact approved additions save through Profile to Supabase immediately and are verified by reloading storage. Master loads the current source-backed resume information and confirmed additions through Profile, then passes the same content version to Scout when research starts. One Final Profile and repeated resume approval are no longer required. Fact/Builder extraction, decisions and prompts remain unchanged. Local validation, real-user acceptance and hosted publication remain distinct.",
   "framework": {
     "name": "LangGraph",
@@ -1753,7 +1753,8 @@
         "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated.",
         "2026-10-30: Employment stints are retained independently; source-matched date calculations union overlapping periods. Ambiguous, missing or conflicting dates block an accurate total; ongoing work needs an explicit review date. Approval and date precision are labeled.",
         "2026-10-30 cumulative-profile update: Legacy whole-sentence role/date facts project into distinct employment stints without rewriting approved versions. Source-supported titles and context status are visible; date totals union overlapping intervals and preserve source precision.",
-        "2026-10-31 Section 1 correction: Section 1 handles shared employer/location headers, mixed employer-role lines, abbreviated month/two-digit-year dates and Pres. Source dates remain literal; no century or tenure is inferred. Separate employment stints remain distinct."
+        "2026-10-31 Section 1 correction: Section 1 handles shared employer/location headers, mixed employer-role lines, abbreviated month/two-digit-year dates and Pres. Source dates remain literal; no century or tenure is inferred. Separate employment stints remain distinct.",
+        "2026-11-09: The experience review now displays the specific reason when a duration cannot be calculated. It still does not guess missing or ambiguous dates. TypeScript passed; no real-user date correction was observed."
       ],
       "outputLinks": [
         {
@@ -1874,7 +1875,8 @@
         "2026-10-29: Optional resume-only intake and bounded Profile → Master → Scout discovery added as separate deliverables. Existing JD intake and full pipeline acceptance are preserved.",
         "2026-10-29: Profile-first guided workspace added with optional single-JD/link support, persisted goals and Master intake. Existing full quality, authenticated onboarding and downstream-pipeline acceptance remain open; do not infer completion from the redesigned controls.",
         "2026-10-30: Local guided intake supports selecting multiple JD files at once. One explicit Builder action analyzes all pending selected JDs before comparing current approved facts.",
-        "2026-10-30 cumulative-profile update: Primary employer JD filtering excludes portal AI summaries, recommendations, similar jobs and navigation. Reanalysis archives prior requirement records and retains their history."
+        "2026-10-30 cumulative-profile update: Primary employer JD filtering excludes portal AI summaries, recommendations, similar jobs and navigation. Reanalysis archives prior requirement records and retains their history.",
+        "2026-11-09: Hirebridge ASP.NET job pages now retain the form-wrapped job description and recognize jobdesc sections. The reported public Hirebridge URL parsed into about 6,537 characters; the guided-profile regression suite passed 16 tests. Other employer portals remain subject to source readability limits."
       ],
       "outputLinks": [
         {

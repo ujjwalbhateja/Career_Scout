@@ -1,6 +1,12 @@
 # Career Scout — current project context
 
-Updated 2026-11-05, America/New_York. Repository/app root: `C:\Users\ujjwa\job_search`.
+Updated 2026-11-09, America/New_York. Repository/app root: `C:\Users\ujjwa\job_search`.
+
+## Local intake repair (2026-11-09)
+
+The reported Hirebridge job URL was publicly readable but the JD parser discarded its ASP.NET form wrapper. The parser now keeps the form content and recognizes `jobdesc` sections; the reported page yielded about 6,537 characters and 37 segments. The experience review now displays a specific reason when it cannot calculate a duration from source dates, rather than only a generic failure. It does not invent missing dates. The guided-profile regression suite passed 16 tests and TypeScript passed. No saved user facts, approvals or profile records were altered. The reviewed progress record retains its existing task statuses and adds dated validation notes.
+
+The separate Career Scout Profile Agent fork and teacher site are documented in that repository. These original Career Scout fixes do not imply a new deployment of the original private Site.
 
 ## Latest checkpoint: Profile Agent documentation and standalone extraction (2026-11-05)
 

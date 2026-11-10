@@ -2,12 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {zipSync,strToU8} from 'fflate/browser';
 import {emptyProfile,addDocument,proposeFacts,decideFacts,addJDAnalysis,buildProfiles,approveRole,finalize,savedPacket,addAnswer} from '../lib/profile/domain.mjs';
-import {readJDLink} from '../lib/profile/link-intake.mjs';
+import {readJDLink,extractPrimaryJDContent} from '../lib/profile/link-intake.mjs';
 import {ProfileService} from '../lib/profile/service.mjs';
 import {dispatchProfileOperation} from '../lib/workflow/profile-intake.mjs';
 import {dispatchProfileScout} from '../lib/workflow/scout-handoff.mjs';
 import {assertCommunication} from '../lib/workflow/policy.mjs';
 const resume='At Synthetic Employer, prepared weekly client reports and reconciled client reporting records.';
+test('ASP.NET form-wrapped Hirebridge JDs retain the employer description',()=>{
+  const html='<html><body><form id="aspnetForm"><header><nav>View all jobs</nav></header><article><h1>Manager, Analyst Services</h1><section id="ctl00_pageContent_ctl00_html_jobdesc"><h3>Job Description</h3><p>About Solovis</p><p>Responsibilities include leading an analyst team and improving investment data pipelines.</p><p>Experience managing data operations is required.</p></section><aside>Recommended jobs</aside></article></form></body></html>';
+  const result=extractPrimaryJDContent(html,'https://recruit.hirebridge.com/v3/Jobs/JobDetails.aspx?cid=8487&jid=354586');
+  assert.match(result.content,/Responsibilities include leading an analyst team/);
+  assert.match(result.content,/Experience managing data operations is required/);
+  assert.doesNotMatch(result.content,/Recommended jobs|View all jobs/);
+});
 async function fixture(){const s=emptyProfile();addDocument(s,{id:'resume',kind:'resume',title:'Synthetic resume',hash:'synthetic',segments:[{id:'resume.p1',text:resume}]});await proposeFacts(s,[{category:'experience_claims',field:'reporting',scope:'Synthetic Employer',statement:'Prepared weekly client reports',evidence:[{documentId:'resume',segmentId:'resume.p1',quote:'prepared weekly client reports'}]}]);decideFacts(s,[{id:s.facts[0].id,version:1,decision:'approved'}],'synthetic-owner');return s;}
 const role=s=>({roleName:'Client Reporting Analyst',summary:'Reporting support',keywords:['reporting'],factIds:[s.facts[0].id]});
 function memoryService(s,env={}){const service=new ProfileService(env,'synthetic-owner');let record={revision:1,state:structuredClone(s)};service.memory.load=async()=>structuredClone(record);service.memory.save=async(revision,state)=>{assert.equal(revision,record.revision);record={revision:revision+1,state:structuredClone(state)};return structuredClone(record);};service.memory.reserve=async()=>{};return service;}
