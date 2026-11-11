@@ -1,6 +1,56 @@
 # Career Scout — current project context
 
-Updated 2026-11-09, America/New_York. Repository/app root: `C:\Users\ujjwa\job_search`.
+Updated 2026-11-10, America/New_York. Repository/app root: `C:\Users\ujjwa\job_search`.
+
+## GitHub source checkpoint (2026-11-10)
+
+The user requested publication of the current Career Scout updates to the existing `ujjwalbhateja/Career_Scout` repository. This checkpoint includes the employment-duration convention, approved-addition visibility and original headings, completed-question cleanup, aligned Fact/Profile/Builder prompts, regression tests and the 13-page project PDF. The repository was reported public by GitHub at review time; its visibility was not changed.
+
+The production build, TypeScript and diff checks passed. A targeted sensitive-data scan of all 17 changed/new files, including extracted PDF text, found no credential patterns or private input paths; PDF contact/name checks also passed. Existing focused regression results are recorded below. Private inputs, credentials and local caches remain ignored. Progress revision `2026-11-10.5` records this validation without changing task statuses. This source checkpoint does not deploy the hosted website or change saved profile data.
+
+Pre-publication privacy review replaced a regression fixture's example-like employment timeline with unrelated synthetic roles and dates while preserving the same duration/overlap assertions. The complete PDF was inspected: it contains project architecture and workflow documentation, with no resume records, embedded files, form data or images. Personal comparison counts and specific questionnaire topics are omitted from the public handoff below; private receipts remain local.
+
+## Profile and Builder prompt alignment (2026-11-10)
+
+At the user's request, updated `backend/src/career_scout/agents/profile/prompt.md` and `backend/src/career_scout/agents/profile_builder/prompt.md` to match the existing approved-addition save and display behavior. The prompts require exact full approved work wording, the Approved addition label, the original questionnaire heading when its saved decision and fact/approval references match, and no resume highlight cap on approved additions. Headings remain organizational context, not evidence of extra experience; existing skill categories and approval boundaries are preserved.
+
+Completed approvals retain their wording and JD context without old pre-approval gap warnings or repeated confirmation requests. Actual pending gaps, drafts and invalidated evidence remain distinct. Valid saved additions are reused in later comparisons and the next explicitly requested search; saving does not rerun existing search results. Profile remains a deterministic coordinator: these prompt edits align policy with code and do not implement a new storage or display path.
+
+Validation: 25 focused Node checks passed for byte-exact prompt asset loading and cache invalidation, approval/save/reload/current-profile handoff, full addition visibility, original heading binding and pending/completed questionnaire rendering. The existing Python prompt-loader/path-restriction test passed with only the disabled-cache configuration warning. The asset test now includes Profile as well as Builder. Progress revision `2026-11-10.4` preserves task statuses and history. Future Builder analysis uses the revised prompt fingerprint; this edit did not trigger a model request, comparison refresh, profile write, job search or hosted deployment.
+
+## Approved additions retain their questionnaire area (2026-11-10)
+
+The user still could not locate a narrowed approved answer because its words were independently classified under a generic professional area. Approved questionnaire work now reuses the heading from its exact saved Builder decision, validating decision identity, category, claim text and fact/version/approval references. Other approved answers and resume passages retain their existing classification. Headings remain organizational labels; they add no employer, period or capability to an approved statement.
+
+Each experience area has a stable `professional-area-...` anchor. Links with `?step=Facts#professional-area-...` wait for profile loading before scrolling to and focusing the target. The existing View updated Factual Profile button continues to open the whole professional experience section. All approved additions remain fully visible and labeled, with no stored-profile mutation or new comparison required.
+
+Validation: 67 focused Node checks and TypeScript passed, including original heading preservation, stable rendered links, mismatched-decision rejection and unchanged search-profile version when only a heading changes. Read-only local verification found the reported exact approved wording under the same heading as its questionnaire, with the saved revision unchanged. Private receipt: ignored `.local/approved-addition-visibility/area-verification.json`. Progress revision `2026-11-10.3` preserves task statuses and history. No provider requests or hosted deployment occurred.
+
+## Approved questionnaire additions: visibility and completed questions (2026-11-10)
+
+Read-only investigation verified that the reported approval was saved, source-linked and included in the current profile. Its professional-area heading differed from the questionnaire heading, and the factual experience table sits below the employment and education records. Completed questionnaire history also continued to show its pre-approval coverage explanation. The user requested that these execution issues be handled without requiring individual follow-up instructions.
+
+The existing professional experience table now labels questionnaire additions **Approved addition**, displays their exact full approved wording and keeps all approved additions visible even when an area contains more than two. Resume excerpts retain their existing compact presentation and source details. **View updated Factual Profile** moves to and focuses this section. Completed questionnaire rows show approved wording and job context without stale coverage percentages, missing-experience explanations or repeated confirmation prompts. Actual pending gaps and drafts remain visible for review. No area taxonomy, saved claims, approval history or storage workflow was changed.
+
+Validation: 65 focused Node checks and TypeScript passed. A regression follows three approvals through service persistence, reload, current-profile inclusion and rendered visibility in one area. Other checks retain full wording, exclude unapproved answer text and preserve source/approval boundaries. Read-only saved-profile verification found every approved work addition visible and included in the current profile with the stored revision unchanged. Native Chrome inspection showed the reported addition and other approved lines labeled in the factual profile, and the completed questionnaire without its old coverage warning. Private receipt: ignored `.local/approved-addition-visibility/verification.json`. Progress revision `2026-11-10.2` preserves task statuses and histories; no model request, real profile write or hosted deployment occurred.
+
+## Employment duration: month plus two-digit year (2026-11-10)
+
+At the user's explicit request, the Fact calculation layer now reads a named month followed by YY as 20YY: `AUG 24` means August 2024, and `Jan 19` means January 2019. This supersedes the earlier requirement for a separate full-year approval before calculating every short-year date. The Fact prompt documents the new convention; model extraction continues to preserve the literal source values and quotations. This also supersedes the earlier Fact-prompt checksum checkpoint below.
+
+`lib/profile/employment-duration.mjs` applies the convention only to derived display arithmetic. A valid full-year approval for the same employer, role and source still takes precedence, including explicit historical years. Conflicting approved ranges and missing, invalid, unsupported, reversed or incompatible dates remain blocked. Present uses the supplied review date; overlaps and duplicate intervals count once. The UI design, stored facts, literal dates and approval history are unchanged. No profile migration, source restoration, model request or comparison refresh is required.
+
+Validation: 96 focused Node checks covering durations, approvals, factual review, Section 1, guided-profile behavior and prompt assets passed, and TypeScript passed. A read-only check of the saved local profile rendered every role duration and the total through the actual FactReview component without an Unable to calculate label. A fresh reload confirmed the saved profile was unchanged, and the running development site served the new calculation module. Private receipts are in ignored `.local/employment-20xx-render/`. Progress revision `2026-11-10.1` retains existing task statuses and histories. No Git publication or hosted deployment was performed.
+
+## Project documentation for assignment (2026-11-10)
+
+Prepared and then simplified [Career Scout Project Documentation.pdf](<Career Scout Project Documentation.pdf>) at the user's request. Its title is **Career Scout**. The current 13-page visual guide follows the requested order: agent communication hierarchy; role of each agent; complete user workflow; database and storage design; external tools and APIs. Each included agent has its own page and input/function/output diagram. Matcher, Tailor and Critic are omitted from the entire PDF as explicitly requested. The full four-step profile/discovery workflow is shown; Application Storage is explained separately as a downstream package function without implying a direct search-to-package shortcut.
+
+The initial 24-page technical report was retained locally in ignored `.local/project-documentation/Career Scout Detailed Documentation.pdf`. The simplified guide is generated by `.local/project-documentation/build_visual_guide.py`. All 13 pages were rendered and visually reviewed, bookmarks were verified, and extracted text was checked for the excluded agent names. Descriptions remain based on source at `ecac697`; older seven-step and manual Final Profile instructions are not presented as the current UI. Generation and QA artifacts remain ignored.
+
+This is documentation only: no application code, prompts, design, reviewed feature statuses or deployment were changed. No new full regression suite or provider call was run for the documentation. The report contains no resume passages or credentials.
+
+Read-only investigation found that repeated Builder questions referenced older resume source IDs. User-authorized refresh attempts initially returned Gemini 503 errors and preserved saved state. A later refresh succeeded through the existing per-role comparison action and read-back confirmed current comparisons. Repeated broad experience questions were cleared; genuinely unresolved items stayed unconfirmed. Before/after checks preserved facts, approvals, Builder decisions and documents. No code, prompts, design, feature statuses, deployment or user approvals changed during that refresh. Private snapshots and detailed verification receipts remain under ignored `.local/assignment-comparison-refresh/`.
 
 ## Local intake repair (2026-11-09)
 

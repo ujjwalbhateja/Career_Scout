@@ -125,12 +125,13 @@ test('records overload uses the same evidence and approval checks without mutati
   assert.deepEqual(result, buildEmploymentDurations(state));
 });
 
-test('a broad legacy assertion with multiple stints cannot resolve an unassociated short-date interval', () => {
+test('a broad legacy assertion cannot supply approval for a short date interpreted as 20YY', () => {
   const {state, role} = fixture(); role('Analyst', 'Mar 18', 'Jul 18', {approvedInterval: ['March 2018', 'July 2018']});
   state.facts.at(-1).statement += ' A different stint ran from March 1918 to July 1918.';
   const result = buildEmploymentDurations(state);
-  assert.equal(result.roles[0].duration.status, 'unavailable');
-  assert.equal(result.roles[0].duration.reason, 'short_year_requires_approved_full_year');
+  assert.equal(result.roles[0].duration.start, '2018-03');
+  assert.equal(result.roles[0].duration.months, 4);
+  assert.deepEqual(result.roles[0].duration.resolvedFromFactRefs, []);
 });
 
 test('identical titles and short periods in a shared segment require the specific quoted record span', () => {
@@ -148,8 +149,10 @@ test('identical titles and short periods in a shared segment require the specifi
       evidence: [{documentId: 'resume1', documentVersion: 1, segmentId: 'p1', quote: secondLine}]});
   const result = buildEmploymentDurations(state);
   assert.equal(result.roles.find(row => row.scope === firstScope).duration.months, 4);
-  assert.equal(result.roles.find(row => row.scope === secondScope).duration.status, 'unavailable');
-  assert.equal(result.total.status, 'partial');
+  const second = result.roles.find(row => row.scope === secondScope).duration;
+  assert.equal(second.status, 'calculated');
+  assert.deepEqual(second.resolvedFromFactRefs, []);
+  assert.equal(result.total.status, 'calculated');
   assert.equal(result.total.months, 4);
 });
 
@@ -167,5 +170,51 @@ test('a broad shared evidence quote cannot override a different explicitly sourc
     state.facts.push({id: `f${state.facts.length + 1}`, version: 1, category: 'employment', field, scope, statement, approval: 'pending',
       evidence: [{documentId: 'resume1', documentVersion: 1, segmentId: 'p1', quote: secondLine}]});
   const result = buildEmploymentDurations(state);
-  assert.equal(result.roles.find(row => row.scope === scope).duration.status, 'unavailable');
+  const other = result.roles.find(row => row.scope === scope).duration;
+  assert.equal(other.start, '2024-09');
+  assert.deepEqual(other.resolvedFromFactRefs, []);
+});
+
+test('literal month and short-year dates calculate all roles without approvals, including duplicate records', () => {
+  const {state, role} = fixture();
+  role('Example Manager', 'Jun 25', 'Pres.');
+  role('Example Associate', 'Feb 22', 'MAY 25');
+  role('Example Analyst', 'Apr 20', 'Jan 22');
+  role('Example Trainee', 'May 19', 'Sep 19');
+  role('Duplicate Manager', 'Jun 25', 'Pres.');
+  const before = structuredClone(state);
+  const result = buildEmploymentDurations(state, {asOf: '2026-11-10'});
+  assert.deepEqual(result.roles.map(row => row.duration.months), [17, 39, 21, 4, 17]);
+  assert.equal(result.total.label, '6 years 9 months');
+  assert.equal(result.total.months, 81, 'duplicate intervals count once');
+  assert.equal(result.total.status, 'calculated');
+  assert.ok(result.roles.every(row => row.duration.resolvedFromFactRefs.length === 0));
+  assert.equal(result.roles[1].duration.end, '2025-05');
+  assert.deepEqual(result.roles[1].duration.dateInterpretations[1], {field: 'endDate', source: 'MAY 25', year: 2025, basis: 'month_year_20xx'});
+  assert.deepEqual(state, before, 'no rewritten dates, approval receipts or saved-profile mutations');
+});
+
+test('month abbreviations, full names, case, periods and hyphens work with two-digit years', () => {
+  for (const [start, end] of [['AUG 24', 'sep 24'], ['August 24', 'September 24'], ['Aug. 24', 'Sept. 24'], ['Aug-24', 'Sep-24'], ['Aug 24', 'September 2024']]) {
+    const {state, role} = fixture(); role('Analyst', start, end);
+    const duration = buildEmploymentDurations(state).roles[0].duration;
+    assert.equal(duration.start, '2024-08', start);
+    assert.equal(duration.end, '2024-09', end);
+    assert.equal(duration.months, 1);
+  }
+});
+
+test('short-year convention does not bypass source, date-conflict or missing-date checks', () => {
+  for (const mutation of ['deleted_source', 'stale_source', 'invalid_quote', 'conflict']) {
+    const {state, role} = fixture(); role('Analyst', 'Aug 24', 'Sep 24');
+    if (mutation === 'deleted_source') state.documents[0].deleted = true;
+    if (mutation === 'stale_source') state.documents[0].version = 2;
+    if (mutation === 'invalid_quote') state.facts.find(f => f.field === 'start_date').evidence[0].quote = 'Invented source';
+    if (mutation === 'conflict') state.facts.find(f => f.field === 'start_date').conflict = true;
+    assert.notEqual(buildEmploymentDurations(state).total.status, 'calculated', mutation);
+  }
+  for (const [start, end] of [['Aug 24', null], ['24', '25'], ['Aug 25', 'Jan 24'], ['08/09/24', '09/10/24']]) {
+    const {state, role} = fixture(); role('Analyst', start, end);
+    assert.equal(buildEmploymentDurations(state).roles[0].duration.status, 'unavailable');
+  }
 });

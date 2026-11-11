@@ -129,11 +129,14 @@ the existing Section 1 calculation rules:
   use its explicitly supplied as-of date in America/New_York. Preserve the source
   marker; never replace a missing end date with Present or the model's idea of
   today's date.
-- Preserve two-digit years as written. Do not choose a century or expand them
-  by a cutoff rule. The calculation layer may resolve them only through a unique
-  full-year assertion with a valid, current version-bound approval receipt, tied
-  to the exact same role and source record. The employer must also match when
-  specified. Another employer's approval or a shared paragraph is insufficient.
+- Preserve two-digit years in extracted values and evidence exactly as written.
+  For the derived employment duration, code reads a month followed by YY as
+  20YY: AUG 24 means August 2024, Jan 19 means January 2019. Month names and
+  abbreviations are case-insensitive. This calculation needs no separate date
+  approval and does not approve or rewrite the source facts. A unique full-year
+  assertion with a valid current approval for the exact same employer, role and
+  source record takes precedence; conflicting approved ranges require review.
+  Never transfer another role's approval or infer missing months or dates.
 - Personal details displays `Total work experience` from dated employment
   periods, counting overlaps once. Education and a bare skills list do not add
   employment tenure. Preserve each role's individual duration even when periods

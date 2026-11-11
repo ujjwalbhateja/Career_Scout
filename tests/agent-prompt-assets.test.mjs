@@ -20,7 +20,7 @@ test('reproduces the bare Markdown import-analysis failure without asset classif
 test('actual Vite config handles bare HMR paths and retains byte-exact raw policies in each environment',async()=>{
   const server=await createServer({...options,assetsInclude});
   try{
-    for(const agent of ['profile_builder','fact','scout']){
+    for(const agent of ['profile','profile_builder','fact','scout']){
       const path='/backend/src/career_scout/agents/'+agent+'/prompt.md';
       const source=await readFile(new URL(path.slice(1),root),'utf8');
       for(const environment of Object.values(server.environments)){

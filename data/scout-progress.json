@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
-  "revision": "2026-11-09.1",
-  "reviewedOn": "2026-11-09",
-  "summary": "Profile Builder expands one Factual Profile with role-specific experience and skills questionnaires. Exact approved additions save through Profile to Supabase immediately and are verified by reloading storage. Master loads the current source-backed resume information and confirmed additions through Profile, then passes the same content version to Scout when research starts. One Final Profile and repeated resume approval are no longer required. Fact/Builder extraction, decisions and prompts remain unchanged. Local validation, real-user acceptance and hosted publication remain distinct.",
+  "revision": "2026-11-10.5",
+  "reviewedOn": "2026-11-10",
+  "summary": "Profile Builder expands one Factual Profile with role-specific experience and skills questionnaires. Exact approved additions save through Profile to Supabase immediately and are verified by reloading storage. Master loads the current source-backed resume information and confirmed additions through Profile, then passes the same content version to Scout when research starts. One Final Profile and repeated resume approval are no longer required. The Fact date-display policy interprets month + YY as 20YY without rewriting source dates or approving facts. Local validation, real-user acceptance and hosted publication remain distinct.",
   "framework": {
     "name": "LangGraph",
     "version": "1.5.2",
@@ -1754,7 +1754,8 @@
         "2026-10-30: Employment stints are retained independently; source-matched date calculations union overlapping periods. Ambiguous, missing or conflicting dates block an accurate total; ongoing work needs an explicit review date. Approval and date precision are labeled.",
         "2026-10-30 cumulative-profile update: Legacy whole-sentence role/date facts project into distinct employment stints without rewriting approved versions. Source-supported titles and context status are visible; date totals union overlapping intervals and preserve source precision.",
         "2026-10-31 Section 1 correction: Section 1 handles shared employer/location headers, mixed employer-role lines, abbreviated month/two-digit-year dates and Pres. Source dates remain literal; no century or tenure is inferred. Separate employment stints remain distinct.",
-        "2026-11-09: The experience review now displays the specific reason when a duration cannot be calculated. It still does not guess missing or ambiguous dates. TypeScript passed; no real-user date correction was observed."
+        "2026-11-09: The experience review now displays the specific reason when a duration cannot be calculated. It still does not guess missing or ambiguous dates. TypeScript passed; no real-user date correction was observed.",
+        "2026-11-10: At user request, derived employment durations interpret a named month followed by two digits as 20YY (AUG 24 = August 2024). Exact source text and approvals remain unchanged. Current same-role/source approved full years take precedence; conflicting approvals, missing dates, invalid evidence and reversed ranges remain blocked. Overlapping and duplicate intervals count once. Fact prompt aligned. Local saved-profile rendering passed; hosted publication is separate."
       ],
       "outputLinks": [
         {
@@ -1773,7 +1774,8 @@
           "date": "2026-10-29",
           "reason": "Profile implementation added: private intake/review UI, source-linked schemas, persistent Supabase adapter, individual approvals and saved-profile reuse. Live operation is not yet validated."
         }
-      ]
+      ],
+      "evidence": "2026-11-10: 96 focused duration, approval, factual-review, Section 1, guided-profile and prompt-asset checks passed, plus TypeScript. Read-only local saved-profile rendering verified every role duration, the total, unchanged literal dates and unchanged stored state; the running development site served the updated module."
     },
     {
       "id": "fact-education",
@@ -3259,7 +3261,10 @@
         "2026-11-01: Fixed LinkedIn selected-job search links at JD intake. A valid currentJobId on an official LinkedIn jobs/search or jobs/search-results URL is converted to the direct jobs/view posting before fetching; search/tracking parameters are discarded. Missing, malformed or conflicting selections receive an actionable error. Existing HTTPS, DNS, redirect, size and source-text guards remain enforced. The reported search page reproduced the unreadable-JD error before the fix; the normalized posting returned its actual title and description in a live read-only check. 21 targeted tests and TypeScript passed. No Gemini request, profile write, prompt change or hosted deployment occurred.",
         "2026-11-01: Approved, rejected and already-supported questionnaire rows now appear beneath a collapsed Already answered bar; pending, Somewhat revisions and source-review issues stay unfinished. New JD intake focuses the visible questionnaire on new roles and retains earlier questionnaires under a collapsed bar with an unfinished-item count. Analyze new roles sends only unreviewed selected document IDs; Profile validates that scope, extracts/compares only those JDs and preserves prior reviews, selected sources, facts, decisions and drafts. A separate explicit refresh-all action remains available for Final Profile readiness. All 577 Node tests and TypeScript passed, including scoped model input, approval/history preservation and archive rendering. Read-only rendering of the saved profile confirmed seven completed rows under the closed archive; local page and client modules returned HTTP 200. No real decisions, model requests or profile writes were made for this change; visual browser interaction and hosted deployment remain separate.",
         "2026-11-03: Confirmed additions are now immediately available to Master/Scout through the current factual record, without Final Profile saving. The separate profile-current-record-handoff task owns this storage/read-path change; Builder questionnaires, extraction, decisions and prompt are unchanged.",
-        "2026-11-03: User authorized the prompt alignment. Only the Persistence and Final Profile section was replaced with Immediate persistence through Profile. All other Builder prompt sections are byte-identical; existing questions, answers, approvals and implementation are preserved. Further analyses use the updated prompt fingerprint; no analysis or refresh was triggered by this edit."
+        "2026-11-03: User authorized the prompt alignment. Only the Persistence and Final Profile section was replaced with Immediate persistence through Profile. All other Builder prompt sections are byte-identical; existing questions, answers, approvals and implementation are preserved. Further analyses use the updated prompt fingerprint; no analysis or refresh was triggered by this edit.",
+        "2026-11-10: Approved questionnaire work additions remain visible in full and are labeled in the existing factual-profile experience table, including more than two additions in one area. View updated Factual Profile navigates to that section. Completed questionnaire rows retain approved wording and job context without stale gap scores, explanations or confirmation requests. Source statements, approvals and stored decisions remain unchanged.",
+        "2026-11-10: Approved work additions now retain the area heading from their exact version-bound Builder approval instead of being regrouped from the shortened answer alone. Unrelated or stale decisions cannot assign headings. Stable area anchors and profile-load-aware deep-link scrolling make each approved area directly reachable. Claim text, employer/period attribution, saved approvals and the search-profile content version are unchanged.",
+        "2026-11-10: At user request, Profile and Profile Builder prompts now document the implemented full approved-addition display, exact saved-decision heading binding, completed-question warning suppression and reuse by later comparisons and the next requested search. Headings add no claims; existing skill categories, draft/approval/evidence boundaries and task statuses are preserved. Profile remains deterministic. Future Builder analysis uses the updated prompt fingerprint; no refresh, profile write or search was triggered."
       ],
       "outputLinks": [
         {
@@ -3731,6 +3736,31 @@
       "date": "2026-11-05",
       "title": "Header navigation cleanup",
       "detail": "Removed only the Jobs and Applications header buttons at user request. Step 4, application handlers, agent prompts, stored data and all task statuses remain unchanged. Twelve existing Step 4/progress/architecture checks and TypeScript passed. No provider calls, profile writes or deployment."
+    },
+    {
+      "date": "2026-11-10",
+      "title": "Profile employment duration: month plus two-digit year",
+      "detail": "96 focused Node checks and TypeScript passed. Month abbreviations/full names, case, punctuation, mixed short/full years, historical approved years, source/approval isolation, invalid and conflicting dates, ongoing roles and duplicate/overlapping intervals were checked. The saved-profile React render showed all role durations and the total with original dates intact; a fresh reload confirmed unchanged stored state, and the running local site served the updated calculation module. No model calls, profile writes or hosted deployment. Existing task statuses and history are retained."
+    },
+    {
+      "date": "2026-11-10",
+      "title": "Profile approved-addition visibility and completed-question clarity",
+      "detail": "65 focused Node checks and TypeScript passed, including approval through service save/reload/current-profile loading and rendered visibility of three additions in one area, complete wording, approval/source isolation and pending versus completed gap explanations. Read-only local profile verification confirmed every approved work addition is visible and included in the current profile, with the stored revision unchanged. Native Chrome inspection showed the reported addition labeled in the factual profile and the completed answer without the old coverage warning. No model request, user-profile write or hosted deployment. Existing task statuses and history are preserved."
+    },
+    {
+      "date": "2026-11-10",
+      "title": "Profile approved-area consistency and direct links",
+      "detail": "67 focused Node checks and TypeScript passed. Coverage includes preserving the original questionnaire heading, stable rendered area anchors, rejection of mismatched decision/fact/version/approval bindings, unchanged search-profile content version after label changes, and existing approval/save/reload and display regressions. Read-only local profile verification found the reported full approved line under the matching questionnaire heading with the stored revision unchanged. No provider requests, profile writes or hosted deployment."
+    },
+    {
+      "date": "2026-11-10",
+      "title": "Profile and Builder prompts aligned with approved-addition behavior",
+      "detail": "25 focused Node tests and the existing Python prompt-loader/path-restriction test passed. Checks cover byte-exact asset loading/cache invalidation including both changed prompts, verified approval persistence and current-profile handoff, full work-addition visibility, exact heading bindings and pending versus completed questionnaire rendering. Python reported only the disabled-cache configuration warning. Prompt changes document existing runtime behavior; no model call, comparison refresh, profile write, job search or hosted deployment occurred. Existing task statuses and history remain unchanged."
+    },
+    {
+      "date": "2026-11-10",
+      "title": "Profile source checkpoint prepared for requested GitHub update",
+      "detail": "Production build, TypeScript and diff checks passed for the accumulated employment-duration, approved-addition display and prompt changes. A targeted scan of all 17 changed/new files, including text extracted from the 13-page project PDF, found no credential patterns, private input paths or PDF contact/name matches. Earlier focused regressions remain recorded separately. GitHub reported the existing repository as public; visibility was not changed. Private inputs, credentials and local caches remain ignored. Task statuses are unchanged; this source checkpoint does not imply a hosted deployment, model request or profile write. A further pre-publication privacy review replaced example-like employment dates with an unrelated synthetic timeline and omitted personal comparison counts/topics from the context handoff. Full PDF inspection confirmed architecture/workflow content, no resume records and no embedded attachments, forms or images."
     }
   ]
 }

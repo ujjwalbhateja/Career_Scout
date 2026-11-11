@@ -58,3 +58,18 @@ test('new-role view keeps earlier unfinished questionnaires accessible behind a 
   const split=html.indexOf('<details class="cw-questionnaire-archive"><summary>Earlier role questionnaires (1)');assert.ok(split>0);
   assert.ok(html.slice(0,split).includes('new duty'));assert.ok(!html.slice(0,split).includes('old duty'));assert.ok(html.slice(split).includes('old duty'));
 });
+
+test('completed answers show their approved wording without stale gap scores, explanations or confirmation prompts',()=>{
+  for(const status of ['approved','already_supported']){
+    const approved={...row,status,historyOnly:true,approvedStatement:'Approved exact narrower wording',comparisonExplanation:'This authority is not established.',recordedStatements:['An earlier source passage'],coverageEstimates:[{requirementId:'r',percent:66,criticalGap:true,components:[{scope:'Remaining authority',matched:false,weight:1}]}]};
+    const html=render([{title:'Risk Manager',documentId:'jd1',analysis:'complete',experience:[approved],skills:[]}]);
+    assert.ok(html.includes('Approved exact narrower wording'));
+    assert.ok(html.includes('No further confirmation needed.'));
+    for(const text of ['66%','Why this question remains','This authority is not established.','Does this accurately describe','only the remaining detail','Prepared risk reports'])assert.ok(!html.includes(text),text);
+  }
+});
+
+test('unanswered questions retain their actual gap explanation and coverage after completed-row cleanup',()=>{
+  const html=render([{title:'Risk Manager',documentId:'jd1',analysis:'complete',experience:[{...row,comparisonExplanation:'The additional scope is not established.',coverageEstimates:[{requirementId:'r',percent:66,criticalGap:true,components:[{scope:'Additional scope',matched:false,weight:1}]}]}],skills:[]}]);
+  for(const text of ['66%','Why this question remains','The additional scope is not established.','Does this accurately describe'])assert.ok(html.includes(text),text);
+});

@@ -47,6 +47,19 @@ export default function ProfileWorkspace(){
   const [record,setRecord]=useState<RecordData>({revision:0,state:empty}),[providers,setProviders]=useState<Providers>({supabase:false,pinecone:false,model:false});
   const [tab,setTab]=useState('Documents'),[busy,setBusy]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState(''),[title,setTitle]=useState(''),[text,setText]=useState(''),[selectedJD,setSelectedJD]=useState(true),[picked,setPicked]=useState<string[]>([]),[category,setCategory]=useState('all'),[editing,setEditing]=useState(''),[correction,setCorrection]=useState(''),[answers,setAnswers]=useState<Record<string,string>>({}),[query,setQuery]=useState(''),[results,setResults]=useState<{text:string;id:string;record_type:string}[]>([]),[deleteText,setDeleteText]=useState(''),[disclosure,setDisclosure]=useState('');
   const recordRef=useRef(record),actionLock=useRef(false),disclosureDirty=useRef(false),actionError=useRef('');
+  const profileAdditionsRequested=useRef(false);
+  const profileFocusTarget=useRef('professional-work-experience');
+  useEffect(()=>{
+    const target=window.location.hash.slice(1);
+    if(new URLSearchParams(window.location.search).get('step')==='Facts'&&/^professional-(?:work-experience|area-[a-z0-9-]+)$/.test(target)){
+      profileFocusTarget.current=target;profileAdditionsRequested.current=true;
+    }
+  },[]);
+  useEffect(()=>{
+    if(tab!=='Facts'||!profileAdditionsRequested.current)return;
+    const section=document.getElementById(profileFocusTarget.current);
+    if(section){profileAdditionsRequested.current=false;section.scrollIntoView({block:'start'});section.focus({preventScroll:true});}
+  },[tab,profileLoaded,record.revision]);
   const state=record.state||empty,docs=state.documents.filter(d=>!d.deleted),facts=state.facts.filter(f=>f.lifecycle==='active'),approved=facts.filter(f=>f.approval==='approved'&&!f.conflict),jds=docs.filter(d=>d.kind==='jd'&&d.selected);
   const snapshot=record.currentProfile?.ready?record.currentProfile:null;
   const readiness=finalizationReadiness(state);
@@ -163,7 +176,7 @@ export default function ProfileWorkspace(){
           {!approved.some(f=>!['personal','preferences'].includes(f.category))&&<p>Approved professional facts are needed before Profile Builder can compare job requirements.</p>}
           {!jds.length&&<p>Add one or more job descriptions to create separate role questionnaires.</p>}
           <BuilderExpansion groups={questionnaires} activeDocumentIds={questionnaireScope.newDocumentIds.length?questionnaireScope.activeDocumentIds:reviewDocumentIds||questionnaireScope.activeDocumentIds} disabled={disabled} onSubmit={async body=>{const data=await act('reviewBuilder',body,'Builder decision saved.');return {ok:!!data,message:data?(body.rows[0]?.decision==='somewhat'?'Revision saved as a draft. Review it and approve the wording separately.':body.rows[0]?.decision==='reject'?'Rejection saved. No claim was added.':'Profile updated and saved. Your approved statement is available to Master and Scout.'):actionError.current||'Could not save. Your draft is kept.'};}}/>
-          <button className="cw-secondary" onClick={()=>setTab('Facts')}>View updated Factual Profile</button>
+          <button className="cw-secondary" onClick={()=>{profileFocusTarget.current='professional-work-experience';profileAdditionsRequested.current=true;setTab('Facts');}}>View updated Factual Profile</button>
           <div className="cw-step-footer"><span>Approved additions are saved directly to your profile.</span><button className="cw-primary" disabled={disabled||!snapshot} onClick={()=>setTab('Search')}>Continue to Master &amp; Scout <ArrowRight size={17}/></button></div>
         </section>}
         {tab==='Search'&&<section>
