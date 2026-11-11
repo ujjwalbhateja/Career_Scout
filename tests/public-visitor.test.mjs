@@ -74,6 +74,16 @@ test('missing anonymous storage fails closed and private mode keeps the existing
   env.PUBLIC_DEMO_ENABLED='false';assert.equal((await access.profileAccess(request())).owner,'existing-private-owner');assert.equal(signInReads,1);
 });
 
+test('document byte budgets reject oversized increments without overflowing persistent counters',async t=>{
+  const {env,db}=fixture(t),owner='visitor-'+crypto.randomUUID(),now=Date.UTC(2026,0,2);
+  await reserveVisitorUsage(env,owner,'upload',{now,units:VISITOR_LIMITS.upload.visitor});
+  await assert.rejects(()=>reserveVisitorUsage(env,owner,'upload',{now,units:1}),e=>e.status===429);
+  const bucket=`upload:${Math.floor(now/86400000)}:shared`;
+  assert.equal(db.prepare('SELECT used FROM career_visitor_usage WHERE bucket = ?').get(bucket).used,VISITOR_LIMITS.upload.visitor);
+  await assert.rejects(()=>reserveVisitorUsage(env,'visitor-'+crypto.randomUUID(),'upload',{now,units:VISITOR_LIMITS.upload.visitor+1}),e=>e.status===429);
+  assert.equal(db.prepare('SELECT used FROM career_visitor_usage WHERE bucket = ?').get(bucket).used,VISITOR_LIMITS.upload.visitor);
+});
+
 test('actual Profile API saves and reloads only the current browser and rejects owner injection and cross-site writes',async t=>{
   const {env}=fixture(t),saved=new Map(),oldFetch=globalThis.fetch;
   t.after(()=>{globalThis.fetch=oldFetch;});
@@ -85,7 +95,7 @@ test('actual Profile API saves and reloads only the current browser and rejects 
   };
   const runtime={getProfileEnvironment:()=>env,scheduleProfileWork:()=>{}};
   const access=moduleFrom('lib/profile-access.ts',{'@/app/chatgpt-auth':{getChatGPTUser:async()=>({userId:'private-owner-must-not-be-used'})},'@/lib/profile-runtime':runtime,'@/lib/profile/domain.mjs':domain,'@/lib/profile/visitor-access.mjs':{resolveVisitor,reserveVisitorUsage,publicDemoEnabled:value=>value.PUBLIC_DEMO_ENABLED==='true'}});
-  const api=moduleFrom('app/api/profile/route.ts',{'@/lib/profile-access':access,'@/lib/profile-runtime':runtime,'@/lib/profile/service.mjs':{ProfileService},'@/lib/profile/domain.mjs':domain,'@/lib/profile/providers.mjs':providers,'@/lib/workflow/profile-intake.mjs':{dispatchProfileOperation},'@/lib/profile/agent-prompts':{loadAgentPrompt:async()=>''}});
+  const api=moduleFrom('app/api/profile/route.ts',{'@/lib/profile/visitor-access.mjs':{reserveVisitorUsage},'@/lib/profile-access':access,'@/lib/profile-runtime':runtime,'@/lib/profile/service.mjs':{ProfileService},'@/lib/profile/domain.mjs':domain,'@/lib/profile/providers.mjs':providers,'@/lib/workflow/profile-intake.mjs':{dispatchProfileOperation},'@/lib/profile/agent-prompts':{loadAgentPrompt:async()=>''}});
   const a=await api.GET(request()),b=await api.GET(request());assert.equal(a.status,200);assert.equal(b.status,200);
   const ca=a.headers.get('set-cookie').split(';')[0],cb=b.headers.get('set-cookie').split(';')[0];
   const post=(cookie,body,from=origin)=>api.POST(request(cookie,'/api/profile',{method:'POST',headers:{Origin:from,'Content-Type':'application/json'},body:JSON.stringify(body)}));

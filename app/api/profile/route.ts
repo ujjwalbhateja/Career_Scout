@@ -5,6 +5,7 @@ import { ProfileError, LIMITS } from '@/lib/profile/domain.mjs';
 import { providerStatus } from '@/lib/profile/providers.mjs';
 import {dispatchProfileOperation} from '@/lib/workflow/profile-intake.mjs';
 import {loadAgentPrompt} from '@/lib/profile/agent-prompts';
+import {reserveVisitorUsage} from '@/lib/profile/visitor-access.mjs';
 
 export const dynamic='force-dynamic';
 const headers={'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Vary':'Cookie, Origin'};
@@ -49,11 +50,13 @@ export async function POST(request:Request){
       const form=await new Response(bytes,{headers:{'Content-Type':contentType}}).formData();
       const file=form.get('file');
       if(!file||typeof file==='string')throw new ProfileError('Choose a document.');
+      await reserveVisitorUsage(getProfileEnvironment(),profile.owner,'upload',{units:Math.max(1,file.size)});
       result=await dispatchProfileOperation(profile,{file,body:{kind:form.get('kind'),title:form.get('title'),selected:form.get('selected')==='true',revision:form.get('revision')}});
     }else if(contentType.startsWith('application/json')){
       let body;try{body=JSON.parse(new TextDecoder().decode(bytes));}catch{throw new ProfileError('Use valid JSON.');}
       if(!body||Array.isArray(body)||typeof body!=='object')throw new ProfileError('Invalid request.');
       if('owner_id' in body||'owner' in body||'namespace' in body)throw new ProfileError('Ownership is determined by your browser session or signed-in account.',403);
+      if(body.action==='paste'||body.action==='importJD')await reserveVisitorUsage(getProfileEnvironment(),profile.owner,'upload',{units:body.action==='importJD'?LIMITS.fileBytes:Math.max(1,new TextEncoder().encode(String(body.text||'')).length)});
       allowBackground=!['answer','analyzeAnswer','reviewExperience','reviewBuilder','extractSection1'].includes(body.action);
       result=await dispatchProfileOperation(profile,{body});
     }else throw new ProfileError('Use JSON or a document upload.',415);

@@ -62,6 +62,7 @@ export default function ProfileWorkspace({publicDemo=false}:{publicDemo?:boolean
     if(section){profileAdditionsRequested.current=false;section.scrollIntoView({block:'start'});section.focus({preventScroll:true});}
   },[tab,profileLoaded,record.revision]);
   const state=record.state||empty,docs=state.documents.filter(d=>!d.deleted),facts=state.facts.filter(f=>f.lifecycle==='active'),approved=facts.filter(f=>f.approval==='approved'&&!f.conflict),jds=docs.filter(d=>d.kind==='jd'&&d.selected);
+  const reviewableFacts=facts.filter(f=>f.approval==='pending'&&!f.conflict&&!['personal','preferences'].includes(f.category));
   const snapshot=record.currentProfile?.ready?record.currentProfile:null;
   const readiness=finalizationReadiness(state);
   const questionnaires=useMemo(()=>buildRoleQuestionnaires(state) as RoleQuestionnaire[],[state]);
@@ -168,6 +169,15 @@ export default function ProfileWorkspace({publicDemo=false}:{publicDemo?:boolean
         {tab==='Facts'&&<section>
           <div className="cw-section-heading"><h2>Your factual profile.</h2><p>Personal records, skills and professional work experience from your resume.</p></div>
           <FactReview state={state} disabled={disabled} showReviewDetails={false} onExtract={resumes.length?()=>{void act('extractSection1',{id:resumes.at(-1)!.id},'Section 1 updated from your saved resume.');}:undefined}/>
+          {publicDemo&&!!reviewableFacts.length&&<details className="cw-fact-confirmation" open={!approved.some(f=>!['personal','preferences'].includes(f.category))}>
+            <summary>Review extracted facts ({reviewableFacts.length})</summary>
+            <p>Review the exact statements below before comparing job descriptions. Select the statements you confirm from your supplied document. Your confirmation is separate from independent verification.</p>
+            <fieldset disabled={disabled}><legend>Statements awaiting your review</legend>
+              <label className="cw-confirm-all"><input type="checkbox" checked={reviewableFacts.every(f=>picked.includes(factKey(f)))} onChange={e=>setPicked(e.target.checked?reviewableFacts.map(factKey):[])}/>Select all displayed statements</label>
+              {reviewableFacts.map(f=><div className="cw-confirm-fact" key={factKey(f)}><label><input type="checkbox" checked={picked.includes(factKey(f))} onChange={e=>setPicked(current=>e.target.checked?[...current,factKey(f)]:current.filter(key=>key!==factKey(f)))}/><span><small>{label(f.category)}{f.scope?' · '+f.scope:''}</small>{f.statement}</span></label><details><summary>Source wording</summary>{f.evidence.map((source,i)=><blockquote key={i}>{source.quote}</blockquote>)}</details></div>)}
+              <div className="pf-actions"><button className="cw-primary" disabled={!reviewableFacts.some(f=>picked.includes(factKey(f)))} onClick={()=>decision('approved',reviewableFacts.filter(f=>picked.includes(factKey(f))))}>Approve selected facts</button><button className="cw-secondary" disabled={!reviewableFacts.some(f=>picked.includes(factKey(f)))} onClick={()=>decision('rejected',reviewableFacts.filter(f=>picked.includes(factKey(f))))}>Reject selected facts</button></div>
+            </fieldset>
+          </details>}
           <div className="cw-step-footer"><span>JD requirements never become facts about you.</span><button className="cw-primary" disabled={disabled||!approved.some(f=>!['personal','preferences'].includes(f.category))} onClick={()=>setTab('Builder')}>Expand experience & skills <ArrowRight size={16}/></button></div>
         </section>}
         {tab==='Builder'&&<section>

@@ -50,4 +50,8 @@ test('public mode offers fictional samples and explains browser access without c
   assert.match(publicResume,/No sign-in needed/);assert.match(publicResume,/Each browser gets a separate saved profile/);
   assert.match(publicResume,/Try a sample resume/);assert.match(publicBuilder,/Try a sample job description/);
   assert.doesNotMatch(privateResume,/No sign-in needed|Try a sample resume/);
+  const publicFacts=render('Facts',true),privateFacts=render('Facts');
+  assert.match(publicFacts,/Review extracted facts \(1\)/);assert.match(publicFacts,/Select all displayed statements/);
+  assert.match(publicFacts,/Approve selected facts/);assert.match(publicFacts,/Reject selected facts/);
+  assert.doesNotMatch(privateFacts,/Approve selected facts/);
 });

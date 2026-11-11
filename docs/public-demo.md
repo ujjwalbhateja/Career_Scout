@@ -1,6 +1,15 @@
 # Public Career Scout
 
+Open https://career-scout-ujjwa.ujjwalbhateja.chatgpt.site without a login.
+
 Career Scout supports a public, no-sign-in version of the same four-step profile and job-search workflow. Visitors can upload their own documents or choose fictional sample documents. Samples do not approve any facts or represent real vacancies.
+
+## Trying the workflow
+
+1. Upload a resume, paste its text or choose **Try a sample resume**.
+2. Analyze it, then open **Facts** and review the exact extracted statements. Select the statements you confirm and choose **Approve selected facts**.
+3. Open **Builder**, add a job description or choose the sample JD, and run the comparison. Review and approve only additions that describe your own experience (the sample is fictional).
+4. Open job search, review your criteria and start research. Provider outages or daily allowances can temporarily stop analysis or search; saved documents and approvals remain.
 
 ## Visitor profiles
 
@@ -22,6 +31,7 @@ Atomic D1 counters enforce these defaults across Worker instances:
 | Search requests | 5 per UTC day | 40 per UTC day |
 | Workspace API requests | 120 per minute | 6,000 per minute |
 | New browser sessions | — | 500 per UTC day |
+| New source document bytes | 10 MB per UTC day | 100 MB per UTC day |
 
 One questionnaire analysis can use multiple model calls. Errors are counted conservatively; no automatic provider retry or paid fallback was added. Reaching an allowance preserves saved data and returns an explanation. Search preview does not perform vacancy research. Existing per-operation input, storage and provider limits still apply.
 
@@ -29,6 +39,6 @@ One questionnaire analysis can use multiple model calls. Errors are counted cons
 
 The existing Site identity is preserved in `.openai/hosting.json`. D1 binding `DB` stores only session metadata and usage counters; migrations are generated from `db/schema.ts`. Hosted provider keys stay in Sites secrets. Local `.env.local`, private inputs and caches are excluded from source and deployment artifacts.
 
-Deploy the new Worker and D1 migration while access is still private, verify it, then set the Site audience to `public` as requested. The public landing page and profile/search APIs do not require ChatGPT sign-in. Local-only Python application-package processing remains a separate deployment concern; it is not made cloud-hosted by public profile access.
+The initial Worker and D1 migration were deployed before the Site audience was explicitly changed to `public` at the user's request. The public landing page and profile/search APIs do not require ChatGPT sign-in. Local-only Python application-package processing remains a separate deployment concern; it is not made cloud-hosted by public profile access.
 
 `tests/public-visitor.test.mjs` covers cookie isolation, forged/expired access, cross-profile downloads, owner injection, cross-origin writes, persistent quotas, direct Scout requests, model call boundaries and actual Workers/D1 concurrency.

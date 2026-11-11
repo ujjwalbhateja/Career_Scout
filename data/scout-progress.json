@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "revision": "2026-11-10.6",
+  "revision": "2026-11-10.7",
   "reviewedOn": "2026-11-10",
   "summary": "Profile Builder expands one Factual Profile with role-specific experience and skills questionnaires. Exact approved additions save through Profile to Supabase immediately and are verified by reloading storage. Master loads the current source-backed resume information and confirmed additions through Profile, then passes the same content version to Scout when research starts. One Final Profile and repeated resume approval are no longer required. The Fact date-display policy interprets month + YY as 20YY without rewriting source dates or approving facts. Local validation, real-user acceptance and hosted publication remain distinct.",
   "framework": {
@@ -3409,20 +3409,25 @@
       "stage": "profile",
       "status": "in_review",
       "acceptance": "The shared hosted URL opens without sign-in. Separate browsers cannot read or mutate each other's profiles, originals or approvals, and public access cannot select a pre-existing signed-in owner. Sample and uploaded documents use the existing verified workflow. Persistent shared quotas bound model/search requests. Hosted smoke checks and teacher interaction are recorded separately.",
-      "detail": "Optional public mode preserves the existing four-step UI and signed-in local mode. Opaque HttpOnly browser handles map to independent visitor owners; D1 stores hashed handles and atomic usage counters while Supabase/Pinecone retain scoped profile data.",
+      "detail": "Optional public mode preserves the existing four-step UI and signed-in local mode. Opaque HttpOnly browser handles map to independent visitor owners; D1 stores hashed handles and atomic usage counters while Supabase/Pinecone retain scoped profile data. Public first-time visitors can explicitly review and approve extracted statements with the existing version-bound decision API; atomic upload byte budgets also bound stored input.",
       "blockers": [
-        "Hosted deployment, anonymous live provider checks and representative teacher interaction remain to be verified."
+        "Representative teacher interaction and a complete live Builder-to-Scout run remain to be verified; one live Builder attempt ended with a network failure."
       ],
       "notes": [
-        "2026-11-10: User explicitly requested a public working model with one link and no login. No personal resume/profile data is copied into sample content. Existing signed-in records remain separate."
+        "2026-11-10: User explicitly requested a public working model with one link and no login. No personal resume/profile data is copied into sample content. Existing signed-in records remain separate.",
+        "2026-11-10: Published version 18 and explicitly changed access to public. Anonymous HTTP checks, two isolated visitors, synthetic save/reload and live Gemini resume extraction passed. Synthetic test profiles were deleted after verification. Gemini also returned a temporary 503 in a separate attempt."
       ],
       "outputLinks": [
         {
           "label": "Public demo operation and privacy",
           "url": "/docs/public-demo.md"
+        },
+        {
+          "label": "Public Career Scout",
+          "url": "https://career-scout-ujjwa.ujjwalbhateja.chatgpt.site"
         }
       ],
-      "evidence": "2026-11-10: 61 focused Node checks passed, including real Workers/D1 session isolation and concurrent quota enforcement, API save/reload isolation, owner/header injection, invalid/expired cookies, cross-origin writes, direct Scout request limits, model call guards and existing approval/date regressions. TypeScript passed before the final test additions. Production publication and live checks are pending.",
+      "evidence": "2026-11-10: All 682 Node tests passed, with TypeScript and the initial production build. Nine visitor-access tests cover real Workers/D1 concurrency, API isolation, forged/expired handles, cross-origin writes, quotas and model/search guards. Hosted version 18 serves publicly without login; two anonymous profiles stayed isolated through save/reload and Gemini extracted 34 fictional resume facts. A later Builder request failed at the network boundary, so no end-to-end live Builder/search success is claimed. First-time fact approval UI and upload byte budgets passed the focused 12-test suite and are included in the publication follow-up. Browser automation could not verify the Windows URL and stopped; no browser click-through success is claimed.",
       "source": "lib/profile/visitor-access.mjs; lib/profile-access.ts; tests/public-visitor.test.mjs"
     }
   ],
@@ -3790,6 +3795,11 @@
       "date": "2026-11-10",
       "title": "Profile public visitor access: local isolation and bounded usage",
       "detail": "61 focused Node checks passed, including eight visitor-access scenarios and actual Workers/D1 concurrency. A new schema-only D1 migration stores hashed session handles and usage counters. Existing profile storage, evidence/approval boundaries and signed-in private mode are retained. Publication and representative live validation remain separate."
+    },
+    {
+      "date": "2026-11-10",
+      "title": "Public deployment, anonymous storage and live extraction",
+      "detail": "2026-11-10: All 682 Node tests passed, with TypeScript and the initial production build. Nine visitor-access tests cover real Workers/D1 concurrency, API isolation, forged/expired handles, cross-origin writes, quotas and model/search guards. Hosted version 18 serves publicly without login; two anonymous profiles stayed isolated through save/reload and Gemini extracted 34 fictional resume facts. A later Builder request failed at the network boundary, so no end-to-end live Builder/search success is claimed. First-time fact approval UI and upload byte budgets passed the focused 12-test suite and are included in the publication follow-up. Browser automation could not verify the Windows URL and stopped; no browser click-through success is claimed."
     }
   ]
 }

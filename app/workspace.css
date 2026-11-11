@@ -15,4 +15,11 @@
 .cw-public-note{max-width:1180px;margin:18px auto 0;padding:12px 18px;border:1px solid #dbe4dc;border-radius:12px;background:#f4f8f3;color:#405248;font-size:13px;line-height:1.65}
 .cw-public-note strong{margin-right:5px;color:#243d31}
 .cw-public-note button{border:0;background:none;padding:0;color:inherit;text-decoration:underline;cursor:pointer;font:inherit}
+.cw-fact-confirmation{margin-top:24px;padding:18px;border:1px solid #dbe4dc;border-radius:12px;background:#fff}
+.cw-fact-confirmation>summary{font-weight:650;cursor:pointer}.cw-fact-confirmation>p{font-size:14px;line-height:1.6}
+.cw-fact-confirmation fieldset{border:0;padding:0;min-width:0}.cw-fact-confirmation legend{font-weight:600;margin-bottom:14px}
+.cw-confirm-all,.cw-confirm-fact label{display:flex;align-items:flex-start;gap:10px;line-height:1.6}.cw-confirm-fact{padding:14px 0;border-bottom:1px solid #e6ece7}
+.cw-confirm-fact input,.cw-confirm-all input{margin-top:5px;flex:none}.cw-confirm-fact small{display:block;color:#66776c;text-transform:capitalize}
+.cw-confirm-fact details{margin:6px 0 0 24px;font-size:13px}.cw-confirm-fact blockquote{margin:8px 0;padding-left:10px;border-left:2px solid #dbe4dc}
+.cw-fact-confirmation .pf-actions{margin-top:18px;display:flex;flex-wrap:wrap;gap:10px}
 @media(max-width:700px){.cw-public-note{margin:14px 16px 0}}
