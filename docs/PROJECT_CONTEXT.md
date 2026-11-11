@@ -2,6 +2,12 @@
 
 Updated 2026-11-10, America/New_York. Repository/app root: `C:\Users\ujjwa\job_search`.
 
+## Public no-sign-in workspace (2026-11-10)
+
+The user requested a public working model usable through one link without login. The existing Site identity is retained. Optional public mode assigns each browser an independent server-generated visitor owner and never selects the existing signed-in account profile. D1 holds only hashed access cookies and atomic request/model/search quotas. Supabase and Pinecone keep their current owner isolation and approval rules. The four-step interface gains a short browser-access notice and fictional sample resume/JD buttons. Local private mode remains the default.
+
+The schema-only migration and source changes are implemented; 61 focused Node checks passed, including actual Workers/D1 concurrency, API isolation, forged-owner rejection and model/search budget boundaries. Hosted access is still private while deployment is prepared. Public provider smoke tests and teacher interaction are pending. Runtime secret values are preserved; only PUBLIC_DEMO_ENABLED was added in Sites. See [public-demo.md](public-demo.md) for limits, browser-access expiry and data deletion behavior. Progress revision 2026-11-10.6 keeps the new capability In Review and preserves existing task statuses.
+
 ## GitHub source checkpoint (2026-11-10)
 
 The user requested publication of the current Career Scout updates to the existing `ujjwalbhateja/Career_Scout` repository. This checkpoint includes the employment-duration convention, approved-addition visibility and original headings, completed-question cleanup, aligned Fact/Profile/Builder prompts, regression tests and the 13-page project PDF. The repository was reported public by GitHub at review time; its visibility was not changed.

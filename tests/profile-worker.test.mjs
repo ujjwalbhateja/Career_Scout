@@ -24,6 +24,7 @@ function worker(requests,geminiResponse){
   return new Miniflare({rootPath:root,compatibilityDate:'2026-05-15',compatibilityFlags:['nodejs_compat'],modules:[
     {type:'ESModule',path:root+'profile-worker-test.mjs',contents:source},
     {type:'ESModule',path:fileURLToPath(new URL('lib/profile/providers.mjs',base))},
+    {type:'ESModule',path:fileURLToPath(new URL('lib/profile/visitor-access.mjs',base))},
     {type:'ESModule',path:fileURLToPath(new URL('lib/profile/domain.mjs',base))},
     {type:'ESModule',path:fileURLToPath(new URL('lib/profile/search-profile.mjs',base))},
     {type:'ESModule',path:fileURLToPath(new URL('lib/profile/source-records.mjs',base))},

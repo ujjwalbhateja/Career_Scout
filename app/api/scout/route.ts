@@ -1,7 +1,8 @@
 import { importLink, normalize, safeURL } from '@/lib/scout.mjs';
 import { searchKeenable, searchCriteria, SearchError, SEARCH_LIMITS, SEARCH_VERSION } from '@/lib/keenable.mjs';
 import { getSearchKey } from '@/lib/search-runtime';
-import {getChatGPTUser} from '@/app/chatgpt-auth';
+import {profileAccess} from '@/lib/profile-access';
+import {reserveVisitorUsage} from '@/lib/profile/visitor-access.mjs';
 import {getProfileEnvironment} from '@/lib/profile-runtime';
 import {ProfileService} from '@/lib/profile/service.mjs';
 import {ProfileError} from '@/lib/profile/domain.mjs';
@@ -12,7 +13,7 @@ import {prioritizeScoutContext} from '@/lib/workflow/scout-agent.mjs';
 import {loadAgentPrompt} from '@/lib/profile/agent-prompts';
 
 export const dynamic = 'force-dynamic';
-const responseHeaders={'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Vary':'Origin'};
+const responseHeaders={'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Vary':'Cookie, Origin'};
 const active=new Map<string,{started:number;count:number;running:number}>();
 function reserve(scope:string){
   const time=Date.now();
@@ -44,9 +45,10 @@ export async function POST(request:Request){
   if(!request.headers.get('content-type')?.toLowerCase().startsWith('application/json'))return reply({error:'Use a JSON request.'},415);
   try{
     const body=await readBody(request);
+    const access=await profileAccess(request);
+    if('owner' in body||'owner_id' in body||'namespace' in body)throw new ProfileError('Ownership is determined by your browser session or signed-in account.',403);
     if(body.action==='profilePlan'||(body.action==='search'&&body.profileSelection)){
-      const user=await getChatGPTUser();if(!user)throw new ProfileError('Sign in to use your private approved profile.',401);
-      const profile=new ProfileService(getProfileEnvironment(),user.userId);
+      const profile=new ProfileService(getProfileEnvironment(),access.owner);
       // Preview always loads today's stored profile, including when an old
       // bookmarked URL names a retired Final Profile. Execution pins that result.
       const preview=await previewProfileScout(profile,body.action==='profilePlan'?{version:'current'}:body.profileSelection,body);
@@ -54,9 +56,9 @@ export async function POST(request:Request){
         const {previousSeen:_history,...publicPlan}=preview.plan;
         return reply({...publicPlan,handoff:preview.handoff,audit:preview.audit});
       }
-      return await searchResponse(request,preview.plan.criteria,{plan:preview.plan,audit:preview.audit,profile,version:preview.plan.selection.version});
+      return await searchResponse(request,preview.plan.criteria,access.owner,{plan:preview.plan,audit:preview.audit,profile,version:preview.plan.selection.version});
     }
-    if(body.action==='search')return await searchResponse(request,body);
+    if(body.action==='search')return await searchResponse(request,body,access.owner);
     if(body.action==='import'){
       const result=await importLink(String(body.url||'').slice(0,3000));
       const total=result.jobs.length;
@@ -74,19 +76,19 @@ export async function POST(request:Request){
 }
 function bodySafeError(error:Error){return /^(Enter a complete|Only public|This page|Page returned|Use an HTML|Too many page|That role|Company board|Source returned|This page does not resolve)/.test(error.message);}
 
-async function searchResponse(request:Request,body:Record<string,unknown>,trusted?:{plan:Record<string,any>;audit:any[];profile:InstanceType<typeof ProfileService>;version:string}){
+async function searchResponse(request:Request,body:Record<string,unknown>,scope:string,trusted?:{plan:Record<string,any>;audit:any[];profile:InstanceType<typeof ProfileService>;version:string}){
   const reply=(value:unknown,status=200)=>Response.json(value,{status,headers:responseHeaders});
       if(!trusted)searchCriteria(body);
       const key=getSearchKey();if(!key)return reply({error:'Keenable is not configured. Add the server API key before searching.'},503);
-      // Hosted access is enforced by the owner-private Sites gate. No client-supplied provider key is accepted.
-      const scope=trusted?.profile.owner||request.headers.get('oai-authenticated-user-id')||'private-owner';
+      // Identity is resolved server-side for both public sessions and sign-in.
+      await reserveVisitorUsage(getProfileEnvironment(),scope,'search');
       const release=reserve(scope);
       const cancellation=new AbortController();
       const signal=AbortSignal.any([request.signal,cancellation.signal,AbortSignal.timeout(90000)]);
       const execute=async(onEvent:(event:unknown)=>void=()=>{})=>{
         if(!trusted)return searchKeenable(body,{key,scope,signal,onEvent});
         onEvent({type:'progress',message:'Master loaded the saved profile. Scout is selecting approved professional search terms.'});
-        const selected=await prioritizeScoutContext(trusted.plan.scoutContext,await loadAgentPrompt('scout'),getProfileEnvironment());
+        const selected=await prioritizeScoutContext(trusted.plan.scoutContext,await loadAgentPrompt('scout'),trusted.profile.env);
         signal.throwIfAborted();
         const dispatchAudit=[...trusted.audit,auditRoute('master','scout','validated-profile-search-request')];
         const dispatched=await createScoutHandoffReceipt(trusted.plan,dispatchAudit,{stage:'dispatched',context:selected.context,policy:selected.policy});

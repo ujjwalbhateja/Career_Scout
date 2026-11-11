@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "revision": "2026-11-10.5",
+  "revision": "2026-11-10.6",
   "reviewedOn": "2026-11-10",
   "summary": "Profile Builder expands one Factual Profile with role-specific experience and skills questionnaires. Exact approved additions save through Profile to Supabase immediately and are verified by reloading storage. Master loads the current source-backed resume information and confirmed additions through Profile, then passes the same content version to Scout when research starts. One Final Profile and repeated resume approval are no longer required. The Fact date-display policy interprets month + YY as 20YY without rewriting source dates or approving facts. Local validation, real-user acceptance and hosted publication remain distinct.",
   "framework": {
@@ -3400,6 +3400,30 @@
       ],
       "evidence": "2026-11-03: 661 Node tests, TypeScript and production build passed. Focused tests cover Step 4 render and current-version handoff, immutable result criteria, rejection of partial/corrupt/unsafe cached results, salary/visa/date uncertainty and exclusion of local research from production builds. Local page and transformed frontend modules returned HTTP 200. Native browser inspection confirmed the new step in navigation; minimized-window/input limitations prevented full interactive visual acceptance. Prompt alignment: 70 targeted Node checks passed with the updated Scout prompt; no new model/provider calls or profile writes. Master remains deterministic and its prompt does not implement new routing.",
       "source": "app/profile/search-step.tsx; app/scout.tsx; lib/search-session.mjs"
+    },
+    {
+      "id": "profile-public-visitor-access",
+      "owner": "profile",
+      "title": "Public no-sign-in visitor workspaces",
+      "dependsOn": [],
+      "stage": "profile",
+      "status": "in_review",
+      "acceptance": "The shared hosted URL opens without sign-in. Separate browsers cannot read or mutate each other's profiles, originals or approvals, and public access cannot select a pre-existing signed-in owner. Sample and uploaded documents use the existing verified workflow. Persistent shared quotas bound model/search requests. Hosted smoke checks and teacher interaction are recorded separately.",
+      "detail": "Optional public mode preserves the existing four-step UI and signed-in local mode. Opaque HttpOnly browser handles map to independent visitor owners; D1 stores hashed handles and atomic usage counters while Supabase/Pinecone retain scoped profile data.",
+      "blockers": [
+        "Hosted deployment, anonymous live provider checks and representative teacher interaction remain to be verified."
+      ],
+      "notes": [
+        "2026-11-10: User explicitly requested a public working model with one link and no login. No personal resume/profile data is copied into sample content. Existing signed-in records remain separate."
+      ],
+      "outputLinks": [
+        {
+          "label": "Public demo operation and privacy",
+          "url": "/docs/public-demo.md"
+        }
+      ],
+      "evidence": "2026-11-10: 61 focused Node checks passed, including real Workers/D1 session isolation and concurrent quota enforcement, API save/reload isolation, owner/header injection, invalid/expired cookies, cross-origin writes, direct Scout request limits, model call guards and existing approval/date regressions. TypeScript passed before the final test additions. Production publication and live checks are pending.",
+      "source": "lib/profile/visitor-access.mjs; lib/profile-access.ts; tests/public-visitor.test.mjs"
     }
   ],
   "communication": [
@@ -3761,6 +3785,11 @@
       "date": "2026-11-10",
       "title": "Profile source checkpoint prepared for requested GitHub update",
       "detail": "Production build, TypeScript and diff checks passed for the accumulated employment-duration, approved-addition display and prompt changes. A targeted scan of all 17 changed/new files, including text extracted from the 13-page project PDF, found no credential patterns, private input paths or PDF contact/name matches. Earlier focused regressions remain recorded separately. GitHub reported the existing repository as public; visibility was not changed. Private inputs, credentials and local caches remain ignored. Task statuses are unchanged; this source checkpoint does not imply a hosted deployment, model request or profile write. A further pre-publication privacy review replaced example-like employment dates with an unrelated synthetic timeline and omitted personal comparison counts/topics from the context handoff. Full PDF inspection confirmed architecture/workflow content, no resume records and no embedded attachments, forms or images."
+    },
+    {
+      "date": "2026-11-10",
+      "title": "Profile public visitor access: local isolation and bounded usage",
+      "detail": "61 focused Node checks passed, including eight visitor-access scenarios and actual Workers/D1 concurrency. A new schema-only D1 migration stores hashed session handles and usage counters. Existing profile storage, evidence/approval boundaries and signed-in private mode are retained. Publication and representative live validation remain separate."
     }
   ]
 }
